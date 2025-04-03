@@ -1,0 +1,11 @@
+# OS-specific
+.DS_Store
+*.swp
+
+# IDE-specific
+.idea/
+.vscode/
+.cursor/
+
+# Log files
+*.log
