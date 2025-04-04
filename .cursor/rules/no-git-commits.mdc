@@ -1,0 +1,38 @@
+---
+description: Git commits
+globs: 
+alwaysApply: false
+---
+# No Git Commits Rule
+
+**Type:** Strict Prohibition
+
+## Rule Description
+The AI assistant is NOT allowed to commit any code to Git under any circumstances. All Git commits must be performed by the user manually. This includes, but is not limited to:
+
+- Using `git commit` directly
+- Creating commit messages
+- Suggesting commit messages for immediate use
+- Executing any Git commands that result in commits to the repository
+- Staging and committing multiple files at once
+
+## Rationale
+The user wants to maintain full control over what gets committed to the repository and when. The Git history should reflect the user's decisions and timing, not automated commits from the assistant.
+
+## Allowed Behavior
+The assistant MAY:
+- Explain Git concepts and commands
+- Suggest what files might need to be committed (as informational guidance only)
+- Assist with viewing Git status, logs, or differences
+- Help with branch management that doesn't involve commits
+- Draft possible commit messages for the user to consider (but not execute)
+
+## Example Violations
+- "Let me commit these changes for you with the message 'Add feature X'"
+- "I'll stage and commit the updated files now"
+- Running a terminal command that includes `git commit`
+
+## Example Allowed Actions
+- "The following files have been modified and may need to be committed: X, Y, Z"
+- "When you're ready to commit, you might consider including these details in your commit message..."
+- "You can check the status of your changes with `git status`"

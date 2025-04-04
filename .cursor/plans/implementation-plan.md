@@ -1,0 +1,113 @@
+# Technical Implementation Roadmap: Property Prices and Environmental Quality Correlation Map App
+
+## 🎯 Project Overview
+
+Develop a web app providing interactive map-based visualizations and correlations between property prices and environmental quality indicators in Finland.
+
+**Stack:** React, TypeScript, Node.js (Express), PostgreSQL/SQLite, Open APIs, Cloud Deployment
+
+---
+
+## ✅ Phase 1: Initial Project Setup & Data Exploration
+
+### Tasks
+- [x] Set up Git repository and basic folder structure
+- [x] Initialize React frontend (Vite or Next.js recommended)
+- [x] Set up backend API (Node.js + Express + TypeScript)
+- [x] Choose & initialize database (PostgreSQL or SQLite)
+- [ ] Register and get API keys (Statistics Finland, OpenAQ, EEA noise data)
+- [ ] Verify API data availability and quality through exploratory API calls
+
+### Deliverables
+- [x] Working frontend/backend skeleton apps
+- [ ] Initial exploration script confirming data availability
+
+---
+
+## ✅ Phase 2: Data Integration and Backend Development
+
+### Tasks
+- [ ] Create backend endpoints to fetch:
+    - Property prices (Statistics Finland API)
+    - Air Quality data (OpenAQ API)
+    - Noise levels (EEA API)
+    - Green-space data and Public Transport locations (OpenStreetMap, Digitransit)
+- [ ] Develop automated scheduled tasks to periodically cache/update data
+- [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
+
+### Deliverables
+- REST API endpoints serving aggregated data and correlations
+- Caching mechanism to optimize API response times
+
+---
+
+## ✅ Phase 3: Frontend Development & Interactive Map Visualization
+
+### Tasks
+- [ ] Integrate React mapping library (Leaflet or Mapbox GL JS)
+- [ ] Render property prices and environmental data on interactive map layers
+- [ ] Implement UI components to toggle visibility of layers (air, noise, green-space, transport)
+- [ ] Develop detailed pop-ups providing correlation insights at selected locations
+
+### Deliverables
+- Interactive, fully functional map interface
+- Layer toggling and user-friendly UI interactions
+
+---
+
+## ✅ Phase 4: Deployment and Testing
+
+### Tasks
+- [ ] Deploy backend and frontend to cloud service (e.g., Railway, Vercel, or Fly.io)
+- [ ] Configure environment variables securely
+- [ ] Test deployment thoroughly (API responsiveness, frontend interactivity)
+- [ ] Conduct performance tests (loading speed, API latency)
+
+### Deliverables
+- Publicly accessible, functional MVP web application
+
+---
+
+## ✅ Phase 5: Refinement & Documentation
+
+### Tasks
+- [ ] Write user-friendly documentation and usage guidelines
+- [ ] Document code clearly (frontend/backend)
+- [ ] Collect initial user feedback and address critical issues
+- [ ] Plan future improvements based on user feedback and usage analytics
+
+### Deliverables
+- Comprehensive README and user documentation
+- Code repository with clear instructions
+
+---
+
+## 🔮 Future Expansion Opportunities (Beyond MVP)
+
+- Advanced correlation analysis (regression, ML predictions)
+- User-generated content (reviews, environmental feedback)
+- Real-time data updates and push notifications
+- International expansion beyond Finland
+
+---
+
+## 🛠️ Key Technical Resources (APIs & Libraries)
+
+### APIs:
+- **Property Prices:** [Statistics Finland API](https://www.stat.fi/org/avoindata/)
+- **Air Quality:** [OpenAQ](https://docs.openaq.org/)
+- **Noise Pollution:** [EEA Noise Observation](https://noise.eea.europa.eu/)
+- **Geographic & Transport Data:** [OpenStreetMap](https://www.openstreetmap.org/), [Digitransit](https://digitransit.fi/en/developers/)
+
+### Libraries:
+- **Frontend:** React, Leaflet.js or Mapbox GL JS, Axios, Tailwind CSS
+- **Backend:** Express.js, Axios, TypeORM or Prisma, Node-cron (for scheduled jobs)
+
+---
+
+## 🚩 Next Actions:
+
+The basic project setup is complete! Next steps:
+1. Register for required API keys (Statistics Finland, OpenAQ, EEA)
+2. Create exploratory scripts to verify API data availability
+3. Proceed to Phase 2 (Data Integration and Backend Development)
