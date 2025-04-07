@@ -1,0 +1,33 @@
+---
+description: Don't allow edits to .env files
+globs: .env*
+alwaysApply: false
+---
+ # No .env File Modification Rule
+
+**Type:** Strict Prohibition
+
+## Rule Description
+The AI assistant is strictly prohibited from reading the contents of or modifying any `.env` files within the project. This includes:
+
+- Using file reading tools to view the content of `.env` files.
+- Using file editing tools to add, remove, or change lines in `.env` files.
+- Suggesting specific content to be added to `.env` files (e.g., "Add `API_KEY=...` to your `.env` file").
+
+## Rationale
+`.env` files typically contain sensitive information like API keys, passwords, and other credentials. Reading or modifying these files poses a security risk and could expose sensitive data or break application configuration. The user must manage the contents of `.env` files manually.
+
+## Allowed Behavior
+The assistant MAY:
+- Explain the purpose and general structure of `.env` files.
+- Instruct the user on *how* to manually add environment variables to their `.env` file (without specifying the actual key or value).
+- Execute terminal commands that *source* environment variables from an existing `.env` file (e.g., using `export $(grep -v '^#' .env | xargs)` or similar techniques), provided the command does not expose the file's contents in the output.
+
+## Example Violations
+- "Let me read your `.env` file to check the API key."
+- "I will add the database password to your `.env` file."
+- Displaying the output of `cat .env`.
+
+## Example Allowed Actions
+- "You should add your API key to the `.env` file. Create a line like `SERVICE_API_KEY=YOUR_ACTUAL_KEY`."
+- "I need to source the variables from your `.env` file to run the script. I will use the command: `export $(grep -v '^#' .env | xargs)`."
