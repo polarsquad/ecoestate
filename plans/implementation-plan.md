@@ -15,12 +15,14 @@ Develop a web app providing interactive map-based visualizations and correlation
 - [x] Initialize React frontend (Vite or Next.js recommended)
 - [x] Set up backend API (Node.js + Express + TypeScript)
 - [x] Choose & initialize database (PostgreSQL or SQLite)
-- [ ] Register and get API keys (Statistics Finland, OpenAQ, EEA noise data)
-- [ ] Verify API data availability and quality through exploratory API calls
+- [x] Register and get API keys (Statistics Finland)
+- [x] Verify API data availability and quality through exploratory API calls
+  - [x] Statistics Finland
+  - [x] HSY WMS
 
 ### Deliverables
 - [x] Working frontend/backend skeleton apps
-- [ ] Initial exploration script confirming data availability
+- [x] Initial exploration script confirming data availability
 
 ---
 
@@ -29,8 +31,6 @@ Develop a web app providing interactive map-based visualizations and correlation
 ### Tasks
 - [ ] Create backend endpoints to fetch:
     - Property prices (Statistics Finland API)
-    - Air Quality data (OpenAQ API)
-    - Noise levels (EEA API)
     - Green-space data and Public Transport locations (OpenStreetMap, Digitransit)
 - [ ] Develop automated scheduled tasks to periodically cache/update data
 - [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
@@ -46,7 +46,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 ### Tasks
 - [ ] Integrate React mapping library (Leaflet or Mapbox GL JS)
 - [ ] Render property prices and environmental data on interactive map layers
-- [ ] Implement UI components to toggle visibility of layers (air, noise, green-space, transport)
+- [ ] Implement UI components to toggle visibility of layers (green-space, transport)
 - [ ] Develop detailed pop-ups providing correlation insights at selected locations
 
 ### Deliverables
@@ -95,8 +95,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ### APIs:
 - **Property Prices:** [Statistics Finland API](https://www.stat.fi/org/avoindata/)
-- **Air Quality:** [OpenAQ](https://docs.openaq.org/)
-- **Noise Pollution:** [EEA Noise Observation](https://noise.eea.europa.eu/)
+- **Helsinki Region Data (HSY WMS):** [HSY GeoServer](https://kartta.hsy.fi/geoserver/web/) (Used for walking distance to stations, potential for other regional data)
 - **Geographic & Transport Data:** [OpenStreetMap](https://www.openstreetmap.org/), [Digitransit](https://digitransit.fi/en/developers/)
 
 ### Libraries:
@@ -108,6 +107,6 @@ Develop a web app providing interactive map-based visualizations and correlation
 ## 🚩 Next Actions:
 
 The basic project setup is complete! Next steps:
-1. Register for required API keys (Statistics Finland, OpenAQ, EEA)
+1. Register for required API keys (Statistics Finland)
 2. Create exploratory scripts to verify API data availability
 3. Proceed to Phase 2 (Data Integration and Backend Development)
