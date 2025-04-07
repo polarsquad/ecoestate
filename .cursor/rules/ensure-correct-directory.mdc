@@ -1,0 +1,32 @@
+---
+description: Make sure console commands run in the correct directory
+globs: 
+alwaysApply: true
+---
+ # Ensure Correct Directory for Shell Commands Rule
+
+**Type:** Guideline
+
+## Rule Description
+The AI assistant MUST ensure it is in the correct directory before executing any shell command via the terminal tool. This should be achieved by prepending an appropriate `cd <target_directory>` command, followed by `&&`, to the main command within a *single* terminal tool execution. Do not change directories in a separate step.
+
+## Rationale
+Running commands from the wrong directory is a common source of errors (e.g., file not found, command not found in PATH context, incorrect relative paths). Explicitly changing to the target directory within the same command execution ensures the command runs in the intended context and reduces ambiguity.
+
+## Allowed Behavior
+- **Prepending `cd`:** All `run_terminal_cmd` calls must start with `cd <intended_directory> && ...` unless the command is explicitly intended to run from the current working directory (which should be rare and clearly justified).
+- **Determining Target Directory:** The `<intended_directory>` should be determined based on the context of the task (e.g., the location of a `package.json` for npm commands, the location of source files for build commands, etc.).
+- **Using Project Root:** If necessary, the project root directory can be reliably obtained using `git rev-parse --show-toplevel` within the command itself (e.g., `cd $(git rev-parse --show-toplevel)/server && ...`). This is useful for constructing absolute paths relative to the project root.
+- **Single Step:** The `cd` and the main command must be part of the same string passed to the terminal tool, linked by `&&`.
+
+## Example Violations
+- Running `npm install` without first navigating to the directory containing the `package.json`.
+- Running `python script.py` assuming the current directory is correct without explicitly changing to the script's directory or using absolute paths appropriately.
+- `run_terminal_cmd(command="ls my_files")` (when the CWD might not be the parent of `my_files`).
+- Running `cd server` in one step, and `npm install` in a subsequent step.
+
+## Example Allowed Actions
+- `run_terminal_cmd(command="cd server && npm install")`
+- `run_terminal_cmd(command="cd src/scripts && ts-node my-script.ts")`
+- `run_terminal_cmd(command="cd $(git rev-parse --show-toplevel)/client && npm run build")`
+- `run_terminal_cmd(command="cd /absolute/path/to/data && process_data.sh")`
