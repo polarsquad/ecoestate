@@ -18,15 +18,17 @@ Running commands from the wrong directory is a common source of errors (e.g., fi
 - **Determining Target Directory:** The `<intended_directory>` should be determined based on the context of the task (e.g., the location of a `package.json` for npm commands, the location of source files for build commands, etc.).
 - **Using Project Root:** If necessary, the project root directory can be reliably obtained using `git rev-parse --show-toplevel` within the command itself (e.g., `cd $(git rev-parse --show-toplevel)/server && ...`). This is useful for constructing absolute paths relative to the project root.
 - **Single Step:** The `cd` and the main command must be part of the same string passed to the terminal tool, linked by `&&`.
+- **Absolute paths only:** For the `cd` command, only use absolute paths. Otherwise, you might assume you are in the
+  right directory for a relative path when you are in fact not.
 
 ## Example Violations
 - Running `npm install` without first navigating to the directory containing the `package.json`.
 - Running `python script.py` assuming the current directory is correct without explicitly changing to the script's directory or using absolute paths appropriately.
 - `run_terminal_cmd(command="ls my_files")` (when the CWD might not be the parent of `my_files`).
 - Running `cd server` in one step, and `npm install` in a subsequent step.
+- `run_terminal_cmd(command="cd server && npm install")` assumes `cd server` gets you in the right directory from where
+  you are when it might not.
 
 ## Example Allowed Actions
-- `run_terminal_cmd(command="cd server && npm install")`
-- `run_terminal_cmd(command="cd src/scripts && ts-node my-script.ts")`
 - `run_terminal_cmd(command="cd $(git rev-parse --show-toplevel)/client && npm run build")`
 - `run_terminal_cmd(command="cd /absolute/path/to/data && process_data.sh")`

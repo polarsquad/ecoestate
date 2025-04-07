@@ -1,0 +1,111 @@
+import axios from 'axios';
+import querystring from 'querystring'; // Used for formatting the POST body
+
+// Public Overpass API endpoint
+const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
+
+// Helsinki Central Station approximate coordinates
+const HELSINKI_CENTER_LAT = 60.1719;
+const HELSINKI_CENTER_LON = 24.9414;
+
+// Radius for the search in meters
+const SEARCH_RADIUS = 200; // Search within 200 meters
+
+// Overpass QL query: Find nodes tagged as 'amenity' within a radius around a point
+// [out:json] specifies the output format
+// [timeout:25] sets a timeout for the query
+// node(around:<radius>,<lat>,<lon>) selects nodes
+// [amenity] filters nodes that have an 'amenity' tag
+// out center; outputs the nodes with their coordinates
+const overpassQuery = `
+[out:json][timeout:25];
+(
+  node["amenity"](around:${SEARCH_RADIUS},${HELSINKI_CENTER_LAT},${HELSINKI_CENTER_LON});
+);
+out center;
+`;
+
+/**
+ * Handles API errors and extracts meaningful messages
+ */
+function handleApiError(error: any, context: string): void {
+    console.error(`\n--- ${context} ---`);
+    if (axios.isAxiosError(error)) {
+        console.error('Status:', error.response?.status);
+        console.error('Status Text:', error.response?.statusText);
+        console.error('Data:', JSON.stringify(error.response?.data, null, 2));
+    } else {
+        console.error('Error:', error.message);
+    }
+    console.error(`--- End of Error ---\n`);
+}
+
+/**
+ * Executes an Overpass QL query
+ */
+async function queryOverpassApi(query: string): Promise<any> {
+    console.log(`Querying Overpass API: ${OVERPASS_API_URL}`);
+    console.log(`Query:\n${query.trim()}`);
+
+    try {
+        // Overpass API expects the query in the 'data' parameter of a POST request body
+        const postData = querystring.stringify({ data: query });
+
+        const response = await axios.post(OVERPASS_API_URL, postData, {
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+        });
+
+        if (response.data && response.data.elements) {
+            console.log('Successfully received data from Overpass API.');
+            return response.data;
+        } else {
+            console.error('No elements found in Overpass API response or unexpected format.');
+            console.log('Raw Response:', response.data);
+            return null;
+        }
+    } catch (error) {
+        handleApiError(error, 'Error querying Overpass API');
+        return null;
+    }
+}
+
+/**
+ * Main function to run the test query
+ */
+async function main() {
+    console.log(`--- Testing Overpass API ---`);
+    console.log(`Fetching amenities within ${SEARCH_RADIUS}m of Helsinki Central Station (${HELSINKI_CENTER_LAT}, ${HELSINKI_CENTER_LON})`);
+
+    const data = await queryOverpassApi(overpassQuery);
+
+    if (data && data.elements) {
+        console.log(`\nFound ${data.elements.length} amenities:`);
+        data.elements.forEach((element: any, index: number) => {
+            const tags = element.tags || {};
+            const amenityType = tags.amenity || 'N/A';
+            const name = tags.name || 'Unnamed';
+            console.log(
+                `${index + 1}. Type: ${amenityType}, Name: ${name} (ID: ${element.id}) ` +
+                `[Lat: ${element.lat?.toFixed(5)}, Lon: ${element.lon?.toFixed(5)}]`
+            );
+            // Log center coordinates if available (useful for nodes from ways/relations)
+            if (element.center) {
+                console.log(`   Center: Lat: ${element.center.lat?.toFixed(5)}, Lon: ${element.center.lon?.toFixed(5)}`);
+            }
+            // Log all tags for more detail
+            // console.log('   Tags:', tags);
+        });
+    } else {
+        console.log('\nCould not retrieve amenity data from Overpass API.');
+    }
+
+    console.log(`\n--- Test Complete ---`);
+}
+
+// Run the main function
+main().catch(error => {
+    console.error("Unexpected error in main function:", error);
+    process.exit(1);
+}); 

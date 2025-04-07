@@ -8,7 +8,8 @@
     "test:statfi": "ts-node src/scripts/testStatFiApi.ts",
     "test:openaq": "ts-node src/scripts/testOpenAQApi.ts",
     "test:hsywms": "ts-node src/scripts/testHSYWmsApi.ts",
-    "test:digitransit": "ts-node src/scripts/testDigitransitApi.ts"
+    "test:digitransit": "ts-node src/scripts/testDigitransitApi.ts",
+    "test:osm": "ts-node src/scripts/testOverpassApi.ts"
   },
   "keywords": [],
   "author": "",
