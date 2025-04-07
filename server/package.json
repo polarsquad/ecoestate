@@ -6,7 +6,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "test:statfi": "ts-node src/scripts/testStatFiApi.ts",
-    "test:openaq": "ts-node src/scripts/testOpenAQApi.ts"
+    "test:openaq": "ts-node src/scripts/testOpenAQApi.ts",
+    "test:hsywms": "ts-node src/scripts/testHSYWmsApi.ts"
   },
   "keywords": [],
   "author": "",
