@@ -15,7 +15,11 @@ Develop a web app providing interactive map-based visualizations and correlation
 - [x] Initialize React frontend (Vite or Next.js recommended)
 - [x] Set up backend API (Node.js + Express + TypeScript)
 - [x] Choose & initialize database (PostgreSQL or SQLite)
-- [x] Register and get API keys (Statistics Finland)
+- [x] Register and get API keys if needed
+  - [x] Statistics Finland
+  - [x] HSY WMS
+  - [x] Digitransit
+  - [x] OpenStreetMap's Overpass API
 - [x] Verify API data availability and quality through exploratory API calls
   - [x] Statistics Finland
   - [x] HSY WMS
@@ -31,7 +35,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 ### Tasks
 - [ ] Create backend endpoints to fetch:
     - Property prices (Statistics Finland API)
-    - Green-space data and Public Transport locations (OpenStreetMap, Digitransit)
+    - Green-space data and Public Transport locations (OpenStreetMap, Digitransit, HSY WMS)
 - [ ] Develop automated scheduled tasks to periodically cache/update data
 - [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
 
