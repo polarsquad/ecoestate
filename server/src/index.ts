@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import propertyPricesRouter from './routes/propertyPrices'; // Import the new router
+import mapDataRouter from './routes/mapDataRoutes'; // Import the map data router
 
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
@@ -14,6 +15,7 @@ app.get('/', (req: Request, res: Response) => {
 
 // Mount the property prices router
 app.use('/api/property-prices', propertyPricesRouter);
+app.use('/api/map-data', mapDataRouter); // Mount the new router
 
 // Global error handler (optional basic example)
 app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
