@@ -1,5 +1,6 @@
 import axios from 'axios';
-import querystring from 'querystring'; // Used for formatting the POST body
+import querystring from 'querystring';
+import { OverpassResponse, OverpassElement } from '../types/overpass.types'; // Import types - Added .js extension
 
 // Public Overpass API endpoint
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -43,7 +44,7 @@ function handleApiError(error: any, context: string): void {
 /**
  * Executes an Overpass QL query
  */
-async function queryOverpassApi(query: string): Promise<any> {
+async function queryOverpassApi(query: string): Promise<OverpassResponse | null> {
     console.log(`Querying Overpass API: ${OVERPASS_API_URL}`);
     console.log(`Query:\n${query.trim()}`);
 
@@ -51,7 +52,7 @@ async function queryOverpassApi(query: string): Promise<any> {
         // Overpass API expects the query in the 'data' parameter of a POST request body
         const postData = querystring.stringify({ data: query });
 
-        const response = await axios.post(OVERPASS_API_URL, postData, {
+        const response = await axios.post<OverpassResponse>(OVERPASS_API_URL, postData, {
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
@@ -82,7 +83,7 @@ async function main() {
 
     if (data && data.elements) {
         console.log(`\nFound ${data.elements.length} amenities:`);
-        data.elements.forEach((element: any, index: number) => {
+        data.elements.forEach((element: OverpassElement, index: number) => {
             const tags = element.tags || {};
             const amenityType = tags.amenity || 'N/A';
             const name = tags.name || 'Unnamed';

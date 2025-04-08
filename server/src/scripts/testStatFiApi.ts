@@ -1,4 +1,12 @@
 import axios from 'axios';
+import {
+    Category,
+    Dimension,
+    JsonStatResponse,
+    BuildingPrices,
+    PostalCodeData,
+    TableRow
+} from '../types/statfi.types'; // Import types
 
 // Base URL for the StatFin PX-Web API
 const STATFI_API_BASE_URL = 'https://pxdata.stat.fi:443/PxWeb/api/v1/fi/StatFin/ashi/';
@@ -35,47 +43,6 @@ const queryPayload = {
         format: 'json-stat2'
     }
 };
-
-// Define types for the JSON-stat response structure
-interface Category {
-    index: { [key: string]: number };
-    label: { [key: string]: string };
-}
-
-interface Dimension {
-    label: string;
-    category: Category;
-}
-
-interface JsonStatResponse {
-    id: string[];
-    size: number[];
-    dimension: { [key: string]: Dimension };
-    value: (number | string)[];
-}
-
-// Define types for our processed data
-interface BuildingPrices {
-    [buildingType: string]: number | string;
-}
-
-interface PostalCodeData {
-    postalCode: string;
-    district: string;
-    municipality: string;
-    fullLabel: string;
-    prices: BuildingPrices;
-}
-
-interface TableRow {
-    'Postal Code': string;
-    'District': string;
-    'Municipality': string;
-    'Studio Apt (€/m²)': number | string;
-    'One-bedroom Apt (€/m²)': number | string;
-    'Two+ bedroom Apt (€/m²)': number | string;
-    'Row House (€/m²)': number | string;
-}
 
 async function fetchPropertyData() {
     try {

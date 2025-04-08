@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { DigitransitStopsQueryResult } from '../types/digitransit.types'; // Import types
 
 // Base URL for the Digitransit Routing API (GraphQL endpoint)
 // Using HSL (Helsinki Region) router as an example
@@ -57,7 +58,7 @@ function handleApiError(error: any, context: string): void {
 /**
  * Executes a GraphQL query against the Digitransit API
  */
-async function queryDigitransitApi(query: string): Promise<any> {
+async function queryDigitransitApi(query: string): Promise<DigitransitStopsQueryResult | null> {
     if (!apiKey) {
         console.error(`
 === ERROR: No Digitransit API Key ===
@@ -95,7 +96,7 @@ The Digitransit API requires a subscription key for access.
         // Check if data is present
         if (response.data && response.data.data) {
             console.log('Successfully received data from Digitransit API.');
-            return response.data.data;
+            return response.data.data as DigitransitStopsQueryResult; // Cast to imported type
         } else {
             console.error('No data received from Digitransit API, or response format unexpected.');
             console.log('Raw Response:', response.data);
@@ -116,11 +117,10 @@ async function main() {
 
     const data = await queryDigitransitApi(graphqlQuery);
 
-    // Adjust data access based on the simplified query
     if (data && data.stops && Array.isArray(data.stops)) {
         console.log(`\nFound ${data.stops.length} stops (Note: Query fetches all stops, limited display to 10):`);
-        data.stops.slice(0, 10).forEach((stop: any, index: number) => { // Display only first 10
-            const routes = stop.patterns?.map((p: any) => p.route?.shortName || '?').join(', ') || 'N/A';
+        data.stops.slice(0, 10).forEach((stop: import('../types/digitransit.types').DigitransitStop, index: number) => {
+            const routes = stop.patterns?.map((p) => p.route?.shortName || '?').join(', ') || 'N/A';
             console.log(
                 `${index + 1}. ${stop.name} (${stop.code || 'No Code'}) - ID: ${stop.gtfsId} ` +
                 `[Lat: ${stop.lat.toFixed(5)}, Lon: ${stop.lon.toFixed(5)}] Routes: ${routes}`
