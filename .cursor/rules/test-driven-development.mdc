@@ -1,0 +1,67 @@
+---
+description: 
+globs: server/src/**/*.ts,client/src/**/*.ts,client/src/**/*.tsx,client/src/**/*.jsx
+alwaysApply: false
+---
+# Test-Driven Development (TDD) Workflow Rule
+
+**Type:** Guideline
+
+## Rule Description
+This rule outlines the mandatory workflow for implementing new functionality or fixing bugs using a Test-Driven Development (TDD) approach. The goal is to ensure that tests are written *before* the implementation code, guiding the development process and verifying correctness.
+
+## Rationale
+Following a TDD workflow leads to several benefits:
+- **Better Design:** Writing tests first forces consideration of how the code will be used, often leading to more modular and decoupled designs.
+- **Fewer Bugs:** Requirements are captured as executable tests, reducing the chance of implementation errors.
+- **Regression Prevention:** A comprehensive test suite acts as a safety net, ensuring that future changes don't break existing functionality.
+- **Living Documentation:** Tests serve as up-to-date examples of how the code is intended to work.
+
+## Required TDD Workflow (Red-Green-Refactor)
+The development process for any new feature, significant change, or bug fix MUST follow these steps in order:
+
+1.  **Write Test(s) First (Red):**
+    *   Identify the smallest piece of new functionality or the specific bug condition.
+    *   Write one or more automated tests that define the *expected* behavior or outcome for this piece.
+    *   These tests should cover the main success path and relevant edge cases or error conditions.
+
+2.  **Run Tests and See Failure:**
+    *   Execute the newly written test(s).
+    *   Verify that they fail as expected. This is crucial because it confirms the test is correctly targeting behavior that doesn't exist or is broken yet. If the test passes unexpectedly, it might be testing the wrong thing or the functionality already exists.
+
+3.  **Write Implementation Code (Green):**
+    *   Write the *minimum* amount of application code necessary to make the failing test(s) pass.
+    *   Focus solely on satisfying the requirements defined by the test(s). Avoid adding extra functionality not covered by the current tests.
+
+4.  **Run Tests and See Success:**
+    *   Execute the entire test suite (or at least the relevant subset including the new tests).
+    *   Verify that all tests, including the newly added ones, now pass.
+
+5.  **Refactor (Optional but Recommended):**
+    *   With the safety net of passing tests, review the implementation code *and* the test code.
+    *   Refactor to improve clarity, remove duplication, enhance performance, or adhere to coding standards, ensuring all tests continue to pass after each refactoring step.
+
+6.  **Repeat:** Continue the cycle (steps 1-5) for the next small piece of functionality or bug fix until the larger feature is complete.
+
+## Allowed Behavior
+- Writing test files (`*.test.ts`, `*.spec.ts`, etc.) before corresponding implementation files (`*.ts`).
+- Using testing frameworks like Jest, Mocha, Vitest, etc.
+- Mocking dependencies to isolate the unit under test.
+- Running tests frequently throughout the development process.
+- Refactoring code *only* when tests are passing.
+
+## Example Violations
+- Writing implementation code for a new feature *before* writing any tests for it.
+- Writing tests *after* the implementation is already complete (Test-After Development).
+- Skipping the step of running tests to confirm they fail initially.
+- Writing implementation code that goes beyond the scope of the current failing test(s).
+- Refactoring code when tests are failing.
+
+## Example Allowed Sequence
+1.  `edit_file` -> Create `src/tests/services/newService.test.ts` with a test case for `featureX`.
+2.  `run_terminal_cmd` -> Run `npm test src/tests/services/newService.test.ts` (observe failure).
+3.  `edit_file` -> Create/modify `src/services/newService.ts` with minimal code for `featureX`.
+4.  `run_terminal_cmd` -> Run `npm test src/tests/services/newService.test.ts` (observe success).
+5.  `edit_file` -> Refactor code in `src/services/newService.ts` or `src/tests/services/newService.test.ts`.
+6.  `run_terminal_cmd` -> Run `npm test src/tests/services/newService.test.ts` (verify tests still pass).
+7.  Repeat for `featureY`.
