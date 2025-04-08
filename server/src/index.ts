@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import propertyPricesRouter from './routes/propertyPrices'; // Import the new router
 import mapDataRouter from './routes/mapDataRoutes'; // Import the map data router
+import hsyWmsRouter from './routes/hsyWmsRoutes'; // Import the HSY WMS router
 
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
@@ -13,9 +14,10 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Hello from the EcoEstate Backend!');
 });
 
-// Mount the property prices router
+// Mount routers
 app.use('/api/property-prices', propertyPricesRouter);
 app.use('/api/map-data', mapDataRouter); // Mount the new router
+app.use('/api/walking-distance', hsyWmsRouter); // Mount the HSY WMS router
 
 // Global error handler (optional basic example)
 app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
