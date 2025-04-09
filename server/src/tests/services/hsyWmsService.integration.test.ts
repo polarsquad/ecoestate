@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getWalkingDistance } from '../../services/hsyWmsService';
+import { getWalkingDistance, clearWalkingDistanceCache } from '../../services/hsyWmsService';
 
 // Mock axios for testing
 jest.mock('axios');
@@ -30,8 +30,9 @@ describe('hsyWmsService Integration', () => {
     describe('getWalkingDistance', () => {
 
         beforeEach(() => {
-            // Reset mocks before each test
+            // Reset mocks and clear cache before each test
             mockedAxios.get.mockClear();
+            clearWalkingDistanceCache(); // Ensure cache is clean for each test
         });
 
         it('should return "5min" when point is within a 5min walking zone', async () => {
@@ -80,6 +81,9 @@ describe('hsyWmsService Integration', () => {
         });
 
         it('should return null if there is an API error', async () => {
+            // Suppress console.error for this specific test case
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
             // Mock axios to throw an error
             const networkError = new Error('Connection error');
             mockedAxios.get.mockRejectedValue(networkError);
@@ -87,6 +91,9 @@ describe('hsyWmsService Integration', () => {
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBeNull();
             expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Should stop after the first error
+
+            // Restore console.error
+            consoleErrorSpy.mockRestore();
         });
 
         it('should handle invalid or unexpected API response formats', async () => {
@@ -96,6 +103,61 @@ describe('hsyWmsService Integration', () => {
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBeNull();
             expect(mockedAxios.get).toHaveBeenCalledTimes(3); // Should try all zones
+        });
+
+        // --- New Cache Testing --- 
+        it('should cache the result after the first call', async () => {
+            // Mock the 5min zone response
+            mockedAxios.get.mockResolvedValueOnce({ data: mockFeatureCollectionWithFeatures });
+
+            // First call - should hit the API
+            const result1 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result1).toBe('5min');
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+
+            // Second call - should use the cache, not call API again
+            const result2 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result2).toBe('5min');
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Still 1 call
+        });
+
+        it('should cache a null result (point outside zones)', async () => {
+            // Mock response indicating outside all zones
+            mockedAxios.get.mockResolvedValue({ data: mockEmptyFeatureCollection });
+
+            // First call - should hit the API 3 times
+            const result1 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result1).toBeNull();
+            expect(mockedAxios.get).toHaveBeenCalledTimes(3);
+
+            // Second call - should use the cache
+            const result2 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result2).toBeNull();
+            expect(mockedAxios.get).toHaveBeenCalledTimes(3); // Still 3 calls
+        });
+
+        it('should not cache API errors', async () => {
+            // Suppress console.error for this specific test case
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
+            const apiError = new Error('API Failed');
+            mockedAxios.get.mockRejectedValueOnce(apiError); // First call fails
+
+            // First call - should get null due to error
+            const result1 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result1).toBeNull();
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+
+            // Mock a successful response for the second attempt
+            mockedAxios.get.mockResolvedValueOnce({ data: mockFeatureCollectionWithFeatures });
+
+            // Second call - should re-attempt the API call, not use a cached error
+            const result2 = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
+            expect(result2).toBe('5min');
+            expect(mockedAxios.get).toHaveBeenCalledTimes(2); // 1 for failed, 1 for success
+
+            // Restore console.error
+            consoleErrorSpy.mockRestore();
         });
     });
 }); 

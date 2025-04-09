@@ -1,21 +1,21 @@
 import axios from 'axios';
-import { getWalkingDistance } from '../../services/hsyWmsService'; // Service function (will be created)
+import { getWalkingDistance, clearWalkingDistanceCache } from '../../services/hsyWmsService'; // Import clear cache function
 
 // Mock axios
 jest.mock('axios');
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 
-// Sample coordinates (EPSG:3879) - Helsinki Central Railway Station (approx.)
+// Sample coordinates (EPSG:3879)
 const sampleCoords = { x: 25496600, y: 6672900 };
 
-// Mock WMS responses
+// Mock WMS responses (original mock structures)
 const mockGeoJsonFeature = {
     type: 'FeatureCollection',
     features: [
         {
             type: 'Feature',
             id: 'test.1',
-            geometry: null, // Geometry often not needed for simple check
+            geometry: null,
             properties: { /* ... potential properties ... */ }
         }
     ]
@@ -32,26 +32,26 @@ describe('hsyWmsService', () => {
         beforeEach(() => {
             // Reset mocks before each test
             mockedAxios.get.mockClear();
+            // Clear the service's internal cache before each test
+            clearWalkingDistanceCache();
         });
 
         it("should return '5min' if point is within the 5min layer", async () => {
-            // Mock: 5min layer returns feature, others return empty
             mockedAxios.get
                 .mockResolvedValueOnce({ data: mockGeoJsonFeature }) // 5min layer
-                .mockResolvedValue({ data: mockEmptyGeoJson }); // 10min, 15min layers
+                .mockResolvedValue({ data: mockEmptyGeoJson });
 
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBe('5min');
-            expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Should stop after finding the first match
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
             expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('kavely_5min'));
         });
 
         it("should return '10min' if point is only within the 10min layer", async () => {
-            // Mock: 5min empty, 10min feature, 15min irrelevant (stops after 10)
             mockedAxios.get
                 .mockResolvedValueOnce({ data: mockEmptyGeoJson })   // 5min layer
                 .mockResolvedValueOnce({ data: mockGeoJsonFeature }) // 10min layer
-                .mockResolvedValue({ data: mockEmptyGeoJson });    // 15min layer (won't be called if logic is correct)
+                .mockResolvedValue({ data: mockEmptyGeoJson });
 
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBe('10min');
@@ -61,7 +61,6 @@ describe('hsyWmsService', () => {
         });
 
         it("should return '15min' if point is only within the 15min layer", async () => {
-            // Mock: 5min empty, 10min empty, 15min feature
             mockedAxios.get
                 .mockResolvedValueOnce({ data: mockEmptyGeoJson })   // 5min layer
                 .mockResolvedValueOnce({ data: mockEmptyGeoJson })   // 10min layer
@@ -74,7 +73,6 @@ describe('hsyWmsService', () => {
         });
 
         it('should return null if point is outside all layers', async () => {
-            // Mock: All layers return empty
             mockedAxios.get.mockResolvedValue({ data: mockEmptyGeoJson });
 
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
@@ -86,17 +84,18 @@ describe('hsyWmsService', () => {
         });
 
         it('should handle API errors gracefully and return null', async () => {
-            // Mock: API call fails
+            // Suppress console.error for this specific test case
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
             const apiError = new Error('HSY WMS API error');
             mockedAxios.get.mockRejectedValue(apiError);
 
-            // We expect the service function to catch the error and return null
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBeNull();
-            expect(mockedAxios.get).toHaveBeenCalledTimes(1); // Should fail on the first layer check
+            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+
+            // Restore console.error
+            consoleErrorSpy.mockRestore();
         });
-
-        // Optional: Add tests for invalid input coordinates if needed
-
     });
 }); 

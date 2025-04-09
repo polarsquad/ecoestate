@@ -1,6 +1,14 @@
 import axios from 'axios';
 import querystring from 'querystring';
 
+// Simple in-memory cache
+interface CacheEntry {
+    value: '5min' | '10min' | '15min' | null;
+    timestamp: number;
+}
+const walkingDistanceCache = new Map<string, CacheEntry>();
+const CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours in milliseconds
+
 // Base URL for the HSY WMS service
 const HSY_WMS_BASE_URL = 'https://kartta.hsy.fi/geoserver/wms';
 
@@ -70,29 +78,54 @@ async function checkWmsLayer(layerName: string, x: number, y: number): Promise<b
 
 /**
  * Checks HSY WMS layers to determine the shortest walking distance zone (5, 10, or 15 minutes)
- * to public transport stops for a given point.
+ * to public transport stops for a given point. Uses an in-memory cache.
  * 
  * @param x The X coordinate in EPSG:3879.
  * @param y The Y coordinate in EPSG:3879.
  * @returns A promise resolving to '5min', '10min', '15min', or null if outside all zones or on error.
  */
 export async function getWalkingDistance(x: number, y: number): Promise<'5min' | '10min' | '15min' | null> {
-    console.log(`Checking walking distance for coordinates: (${x}, ${y})`);
+    const cacheKey = `${x},${y}`;
+    const now = Date.now();
+
+    // Check cache first
+    const cachedEntry = walkingDistanceCache.get(cacheKey);
+    if (cachedEntry && (now - cachedEntry.timestamp < CACHE_TTL)) {
+        console.log(`Cache hit for coordinates (${x}, ${y}): ${cachedEntry.value}`);
+        return cachedEntry.value;
+    }
+
+    console.log(`Cache miss or expired for coordinates (${x}, ${y}). Checking walking distance...`);
     // Check layers in order: 5min, 10min, 15min
     for (const [duration, layerName] of Object.entries(walkTimeLayers)) {
         try {
             const isInZone = await checkWmsLayer(layerName, x, y);
             if (isInZone) {
+                const result = duration as '5min' | '10min' | '15min';
                 console.log(`Point found within ${duration} zone.`);
-                return duration as '5min' | '10min' | '15min'; // Return the first zone found
+                // Store in cache
+                walkingDistanceCache.set(cacheKey, { value: result, timestamp: now });
+                return result; // Return the first zone found
             }
         } catch (error) {
             // Errors are handled within checkWmsLayer, but catch here just in case
             console.error(`Unexpected error during layer check for ${duration}:`, error);
-            return null; // Treat unexpected errors as point not found
+            // Do not cache errors, just return null
+            return null;
         }
     }
 
     console.log('Point is outside all walking distance zones.');
+    // Cache the null result (point not found in any zone)
+    walkingDistanceCache.set(cacheKey, { value: null, timestamp: now });
     return null; // Not found in any layer
+}
+
+/**
+ * Clears the walking distance cache.
+ * This can be called by a scheduled task.
+ */
+export function clearWalkingDistanceCache() {
+    walkingDistanceCache.clear();
+    console.log('Walking distance cache cleared.');
 } 

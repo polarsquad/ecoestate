@@ -5,6 +5,14 @@ import {
     BuildingPrices
 } from '../types/statfi.types'; // Import types
 
+// Simple in-memory cache for StatFi data
+interface StatFiCacheEntry {
+    value: PostalCodeData[];
+    timestamp: number;
+}
+const statFiCache = new Map<string, StatFiCacheEntry>(); // Cache key is the year (string)
+const STATFI_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
+
 // Base URL for the StatFin PX-Web API
 const STATFI_API_BASE_URL = 'https://pxdata.stat.fi:443/PxWeb/api/v1/fi/StatFin/ashi/';
 
@@ -26,6 +34,17 @@ const TABLE_ID = 'statfin_ashi_pxt_13mu.px';
  * @returns {Promise<PostalCodeData[]>} A promise that resolves to an array of processed postal code data.
  */
 export async function fetchStatFiPropertyData(year: string = "2023"): Promise<PostalCodeData[]> {
+    const cacheKey = year;
+    const now = Date.now();
+
+    // Check cache first
+    const cachedEntry = statFiCache.get(cacheKey);
+    if (cachedEntry && (now - cachedEntry.timestamp < STATFI_CACHE_TTL)) {
+        console.log(`Cache hit for StatFi data (year ${year}).`);
+        return cachedEntry.value;
+    }
+
+    console.log(`Cache miss or expired for StatFi data (year ${year}). Fetching StatFin property price data for year: ${year}`);
 
     const queryPayload = {
         query: [
@@ -127,6 +146,10 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
         pricesByPostalCode.sort((a, b) => a.postalCode.localeCompare(b.postalCode));
 
         console.log(`Successfully processed ${pricesByPostalCode.length} postal code areas with StatFin data for ${year}.`);
+
+        // Cache the successful result
+        statFiCache.set(cacheKey, { value: pricesByPostalCode, timestamp: now });
+
         return pricesByPostalCode;
 
     } catch (error: any) {
@@ -143,4 +166,12 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
         // Re-throw the error to be handled by the caller (e.g., the route handler)
         throw new Error(`Failed to fetch property data for year ${year}.`);
     }
+}
+
+/**
+ * Clears the StatFi property data cache.
+ */
+export function clearStatFiCache() {
+    statFiCache.clear();
+    console.log('StatFi property data cache cleared.');
 } 

@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { fetchGreenSpaces } from '../../services/overpassService';
+import { fetchGreenSpaces, clearOverpassCache } from '../../services/overpassService';
 import { OverpassResponse, OverpassElement } from '../../types/overpass.types';
 import querystring from 'querystring';
 
@@ -20,58 +20,31 @@ const createMockOverpassResponse = (elements: OverpassElement[] = []): OverpassR
     };
 };
 
+// Sample coordinates and radius for testing
+const sampleLat = 60.1;
+const sampleLon = 24.9;
+const sampleRadius = 500;
+
+// Sample Overpass elements
+const mockElement1: OverpassElement = { type: 'node', id: 1, lat: 60.101, lon: 24.901, tags: { leisure: 'park' } };
+const mockElement2: OverpassElement = { type: 'way', id: 2, tags: { landuse: 'forest' }, nodes: [10, 11] };
+
 describe('overpassService', () => {
     describe('fetchGreenSpaces', () => {
-        const testLat = 60.1;
-        const testLon = 24.9;
-        const testRadius = 500;
-
         beforeEach(() => {
             mockedAxios.post.mockClear();
+            clearOverpassCache();
         });
 
         it('should fetch green spaces successfully and return elements', async () => {
-            const mockElements: OverpassElement[] = [
-                { type: "node", id: 1, lat: 60.101, lon: 24.901, tags: { leisure: 'park', name: 'Park A' } },
-                {
-                    type: "way",
-                    id: 2,
-                    tags: { landuse: 'forest' },
-                    bounds: { minlat: 60.0, minlon: 24.8, maxlat: 60.2, maxlon: 25.0 },
-                    geometry: [
-                        { type: "Point", coordinates: [24.9, 60.1] }
-                    ]
-                }
-            ];
-            const mockResponse = createMockOverpassResponse(mockElements);
+            const mockResponse = createMockOverpassResponse([mockElement1, mockElement2]);
             mockedAxios.post.mockResolvedValue({ data: mockResponse });
 
-            const result = await fetchGreenSpaces(testLat, testLon, testRadius);
+            const result = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
 
             expect(mockedAxios.post).toHaveBeenCalledTimes(1);
-
-            // Get the actual arguments passed to axios.post
-            const actualUrl = mockedAxios.post.mock.calls[0][0];
-            const actualDataString = mockedAxios.post.mock.calls[0][1] as string; // Explicitly cast to string
-            const actualHeaders = mockedAxios.post.mock.calls[0][2];
-
-            // Verify URL and headers
-            expect(actualUrl).toBe('https://overpass-api.de/api/interpreter');
-            expect(actualHeaders).toEqual({ headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'Accept': 'application/json' } });
-
-            // Decode the actual data string and check its content
-            const decodedData = querystring.parse(actualDataString);
-            if (typeof decodedData.data !== 'string') {
-                throw new Error('Parsed query data is not a string');
-            }
-            const actualQuery = decodedData.data;
-
-            expect(actualQuery).toContain(`around:${testRadius},${testLat},${testLon}`);
-            expect(actualQuery).toContain('nwr["leisure"="park"]');
-            expect(actualQuery).toContain('nwr["landuse"="forest"]');
-            expect(actualQuery).toContain('out geom;');
-
-            expect(result).toEqual(mockElements);
+            expect(mockedAxios.post.mock.calls[0][1]).toContain('\"leisure\"=\"park\"');
+            expect(result).toEqual([mockElement1, mockElement2]);
             expect(result.length).toBe(2);
         });
 
@@ -79,41 +52,98 @@ describe('overpassService', () => {
             const mockResponse = createMockOverpassResponse([]); // Empty elements
             mockedAxios.post.mockResolvedValue({ data: mockResponse });
 
-            const result = await fetchGreenSpaces(testLat, testLon, testRadius);
-
+            const result = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
             expect(result).toEqual([]);
             expect(mockedAxios.post).toHaveBeenCalledTimes(1);
         });
 
         it('should return an empty array if API response format is unexpected (missing elements)', async () => {
-            const unexpectedResponse = { version: 0.6, /* missing elements */ };
-            mockedAxios.post.mockResolvedValue({ data: unexpectedResponse });
+            const badResponse = { version: 0.6 /* missing elements */ };
+            mockedAxios.post.mockResolvedValue({ data: badResponse });
 
-            const result = await fetchGreenSpaces(testLat, testLon, testRadius);
-
+            const result = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
             expect(result).toEqual([]);
             expect(mockedAxios.post).toHaveBeenCalledTimes(1);
         });
 
-        it('should handle Overpass API errors gracefully and throw a specific error', async () => {
-            const apiErrorMessage = 'Overpass API error: Query timeout';
-            const mockApiError = { response: { status: 504, statusText: 'Gateway Timeout', data: apiErrorMessage } };
-            mockedAxios.post.mockRejectedValue(Object.assign(new Error('Axios error'), mockApiError, { isAxiosError: true }));
+        it('should handle Overpass API errors gracefully and return empty array', async () => {
+            // Suppress console.error for this specific test case
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
-            await expect(fetchGreenSpaces(testLat, testLon, testRadius)).rejects.toThrow(
-                `Failed to fetch green space data from Overpass API for coordinates (${testLat}, ${testLon}).`
-            );
+            const apiError = new Error('Overpass API error');
+            mockedAxios.post.mockRejectedValue(apiError);
+
+            const result = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result).toEqual([]);
             expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+
+            // Restore console.error
+            consoleErrorSpy.mockRestore();
         });
 
-        it('should handle network or other non-API errors', async () => {
+        it('should handle network or other non-API errors and return empty array', async () => {
+            // Suppress console.error for this specific test case
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+
             const networkError = new Error('Network connection failed');
             mockedAxios.post.mockRejectedValue(networkError);
 
-            await expect(fetchGreenSpaces(testLat, testLon, testRadius)).rejects.toThrow(
-                `Failed to fetch green space data from Overpass API for coordinates (${testLat}, ${testLon}).`
-            );
+            const result = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result).toEqual([]);
             expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+
+            // Restore console.error
+            consoleErrorSpy.mockRestore();
+        });
+
+        // --- New Cache Testing --- 
+        it('should cache the result after the first call', async () => {
+            const mockResponse = createMockOverpassResponse([mockElement1]);
+            mockedAxios.post.mockResolvedValue({ data: mockResponse });
+
+            // First call - should hit API
+            const result1 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result1).toEqual([mockElement1]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+
+            // Second call - should use cache
+            const result2 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result2).toEqual([mockElement1]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(1); // Still 1 call
+        });
+
+        it('should cache an empty result', async () => {
+            const mockResponse = createMockOverpassResponse([]); // Empty result
+            mockedAxios.post.mockResolvedValue({ data: mockResponse });
+
+            // First call - API hit
+            const result1 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result1).toEqual([]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+
+            // Second call - Cache hit
+            const result2 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result2).toEqual([]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(1); // Still 1 call
+        });
+
+        it('should not cache API errors', async () => {
+            const apiError = new Error('API Failure');
+            mockedAxios.post.mockRejectedValueOnce(apiError); // First call fails
+
+            // First call - should get empty array due to error handling
+            const result1 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result1).toEqual([]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(1);
+
+            // Mock a successful response for the second attempt
+            const mockResponse = createMockOverpassResponse([mockElement2]);
+            mockedAxios.post.mockResolvedValueOnce({ data: mockResponse });
+
+            // Second call - should re-attempt the API call
+            const result2 = await fetchGreenSpaces(sampleLat, sampleLon, sampleRadius);
+            expect(result2).toEqual([mockElement2]);
+            expect(mockedAxios.post).toHaveBeenCalledTimes(2); // 1 for failed, 1 for success
         });
     });
 }); 

@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import propertyPricesRouter from './routes/propertyPrices'; // Import the new router
 import mapDataRouter from './routes/mapDataRoutes'; // Import the map data router
 import hsyWmsRouter from './routes/hsyWmsRoutes'; // Import the HSY WMS router
+import { initializeScheduledTasks } from './scheduledTasks'; // Import the scheduler initializer
 
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
@@ -27,4 +28,7 @@ app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
 
 app.listen(port, () => {
     console.log(`Server listening on port ${port}`);
+
+    // Initialize scheduled tasks after the server starts
+    initializeScheduledTasks();
 });

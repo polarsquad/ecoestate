@@ -33,10 +33,10 @@ Develop a web app providing interactive map-based visualizations and correlation
 ## ✅ Phase 2: Data Integration and Backend Development
 
 ### Tasks
-- [ ] Create backend endpoints to fetch:
-    - Property prices (Statistics Finland API)
-    - Green-space data and Public Transport locations (OpenStreetMap, Digitransit, HSY WMS)
-- [ ] Develop automated scheduled tasks to periodically cache/update data
+- [x] Create backend endpoints to fetch:
+    - [x] Property prices (Statistics Finland API)
+    - [x] Green-space data and Public Transport locations (OpenStreetMap, HSY WMS)
+- [x] Develop automated scheduled tasks to periodically cache/update data
 - [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
 
 ### Deliverables
