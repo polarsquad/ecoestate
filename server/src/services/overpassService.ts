@@ -1,13 +1,13 @@
 import axios from 'axios';
 import { OverpassResponse, OverpassElement } from '../types/overpass.types';
+import { SimpleCache } from '../utils/cache'; // Import the generic cache
 
-// Simple in-memory cache for Overpass API results
-interface OverpassCacheEntry {
-    value: OverpassElement[];
-    timestamp: number;
-}
-const overpassCache = new Map<string, OverpassCacheEntry>(); // Key: "lat,lon,radius"
+// Define the specific type for this cache's values
+type OverpassValue = OverpassElement[];
+
+// Cache configuration
 const OVERPASS_CACHE_TTL = 1000 * 60 * 60; // 1 hour
+const overpassCache = new SimpleCache<OverpassValue>('Overpass Green Spaces', OVERPASS_CACHE_TTL);
 
 // Base URL for the Overpass API
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -61,16 +61,14 @@ function handleApiError(error: any, context: string): void {
  */
 export async function fetchGreenSpaces(lat: number, lon: number, radius: number): Promise<OverpassElement[]> {
     const cacheKey = `${lat},${lon},${radius}`;
-    const now = Date.now();
 
     // Check cache
-    const cachedEntry = overpassCache.get(cacheKey);
-    if (cachedEntry && (now - cachedEntry.timestamp < OVERPASS_CACHE_TTL)) {
-        console.log(`Cache hit for Overpass query (${cacheKey}).`);
-        return cachedEntry.value;
+    const cachedValue = overpassCache.get(cacheKey);
+    if (cachedValue !== undefined) {
+        return cachedValue;
     }
 
-    console.log(`Cache miss or expired for Overpass query (${cacheKey}). Querying Overpass API for green spaces around (${lat}, ${lon}), radius ${radius}m.`);
+    console.log(`Cache miss for key "${cacheKey}" in [Overpass Green Spaces]. Querying Overpass API...`);
 
     // Construct the Overpass QL query
     // Find nodes, ways, and relations matching the green space tags within the radius
@@ -101,18 +99,17 @@ export async function fetchGreenSpaces(lat: number, lon: number, radius: number)
             }
         );
 
+        const result = response.data?.elements ?? []; // Default to empty array if no elements
         if (response.data && response.data.elements) {
-            console.log(`Successfully received ${response.data.elements.length} green space elements from Overpass API.`);
-            // Cache the result
-            overpassCache.set(cacheKey, { value: response.data.elements, timestamp: now });
-            return response.data.elements;
+            console.log(`Successfully received ${result.length} green space elements from Overpass API.`);
         } else {
             console.warn('No elements found in Overpass API response or unexpected format.');
             console.log('Raw Response Snippet:', JSON.stringify(response.data).substring(0, 500));
-            // Cache the empty result
-            overpassCache.set(cacheKey, { value: [], timestamp: now });
-            return []; // Return empty array if no elements
         }
+        // Cache the result (even if empty)
+        overpassCache.set(cacheKey, result);
+        return result;
+
     } catch (error: any) {
         handleApiError(error, 'fetchGreenSpaces');
         // Do not cache errors
@@ -127,5 +124,5 @@ export async function fetchGreenSpaces(lat: number, lon: number, radius: number)
  */
 export function clearOverpassCache() {
     overpassCache.clear();
-    console.log('Overpass API cache cleared.');
+    // Log message handled by SimpleCache
 } 

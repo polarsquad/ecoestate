@@ -4,14 +4,14 @@ import {
     PostalCodeData,
     BuildingPrices
 } from '../types/statfi.types'; // Import types
+import { SimpleCache } from '../utils/cache'; // Import the generic cache
 
-// Simple in-memory cache for StatFi data
-interface StatFiCacheEntry {
-    value: PostalCodeData[];
-    timestamp: number;
-}
-const statFiCache = new Map<string, StatFiCacheEntry>(); // Cache key is the year (string)
+// Define the specific type for this cache's values
+type StatFiValue = PostalCodeData[];
+
+// Cache configuration
 const STATFI_CACHE_TTL = 1000 * 60 * 60 * 24; // 24 hours
+const statFiCache = new SimpleCache<StatFiValue>('StatFi Property Prices', STATFI_CACHE_TTL);
 
 // Base URL for the StatFin PX-Web API
 const STATFI_API_BASE_URL = 'https://pxdata.stat.fi:443/PxWeb/api/v1/fi/StatFin/ashi/';
@@ -35,16 +35,14 @@ const TABLE_ID = 'statfin_ashi_pxt_13mu.px';
  */
 export async function fetchStatFiPropertyData(year: string = "2023"): Promise<PostalCodeData[]> {
     const cacheKey = year;
-    const now = Date.now();
 
     // Check cache first
-    const cachedEntry = statFiCache.get(cacheKey);
-    if (cachedEntry && (now - cachedEntry.timestamp < STATFI_CACHE_TTL)) {
-        console.log(`Cache hit for StatFi data (year ${year}).`);
-        return cachedEntry.value;
+    const cachedValue = statFiCache.get(cacheKey);
+    if (cachedValue !== undefined) {
+        return cachedValue;
     }
 
-    console.log(`Cache miss or expired for StatFi data (year ${year}). Fetching StatFin property price data for year: ${year}`);
+    console.log(`Cache miss for key "${cacheKey}" in [StatFi Property Prices]. Fetching from StatFin API...`);
 
     const queryPayload = {
         query: [
@@ -148,7 +146,7 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
         console.log(`Successfully processed ${pricesByPostalCode.length} postal code areas with StatFin data for ${year}.`);
 
         // Cache the successful result
-        statFiCache.set(cacheKey, { value: pricesByPostalCode, timestamp: now });
+        statFiCache.set(cacheKey, pricesByPostalCode);
 
         return pricesByPostalCode;
 
@@ -173,5 +171,5 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
  */
 export function clearStatFiCache() {
     statFiCache.clear();
-    console.log('StatFi property data cache cleared.');
+    // Log message handled by SimpleCache
 } 
