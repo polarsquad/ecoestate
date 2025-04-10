@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css'; // Import Leaflet CSS
+import PostcodeBoundaries from './PostcodeBoundaries'; // Import the PostcodeBoundaries component
 
 // Define Helsinki coordinates for the initial center
 const HELSINKI_COORDINATES: [number, number] = [60.1699, 24.9384];
@@ -43,6 +44,7 @@ const MapComponent: React.FC = () => {
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                 />
                 <MapResizer />
+                <PostcodeBoundaries />
                 {/* Markers, GeoJSON layers, etc., will be added here later */}
             </MapContainer>
         </div>

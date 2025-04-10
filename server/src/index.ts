@@ -1,4 +1,5 @@
 import express, { Request, Response } from 'express';
+import cors from 'cors'; // Import CORS middleware
 import propertyPricesRouter from './routes/propertyPrices'; // Import the new router
 import mapDataRouter from './routes/mapDataRoutes'; // Import the map data router
 import hsyWmsRouter from './routes/hsyWmsRoutes'; // Import the HSY WMS router
@@ -7,6 +8,13 @@ import { initializeScheduledTasks } from './scheduledTasks'; // Import the sched
 
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
+
+// Enable CORS for all routes
+app.use(cors({
+    origin: 'http://localhost:5173', // Frontend development server address
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Middleware to parse JSON bodies (optional but good practice for future POST/PUT requests)
 app.use(express.json());

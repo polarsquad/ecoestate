@@ -48,7 +48,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 ## ✅ Phase 3: Frontend Development & Interactive Map Visualization
 
 ### Tasks
-- [ ] Integrate React mapping library (Leaflet or Mapbox GL JS)
+- [x] Integrate React mapping library (Leaflet or Mapbox GL JS)
 - [ ] Render property prices and environmental data on interactive map layers
 - [ ] Implement UI components to toggle visibility of layers (green-space, transport)
 
