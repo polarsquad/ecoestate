@@ -2,20 +2,23 @@ import { PostalCodeData } from '../types/statfi.types';
 import { OverpassElement } from '../types/overpass.types';
 
 // Define potential value types for different caches
-type HsyWmsValue = '5min' | '10min' | '15min' | null;
-type StatFiValue = PostalCodeData[];
-type OverpassValue = OverpassElement[];
+// Remove specific types and allow any type for more flexibility
+// type HsyWmsValue = '5min' | '10min' | '15min' | null;
+// type StatFiValue = PostalCodeData[];
+// type OverpassValue = OverpassElement[];
+//
+// // Union type for allowed cache values
+// type CacheValue = HsyWmsValue | StatFiValue | OverpassValue;
 
-// Union type for allowed cache values
-type CacheValue = HsyWmsValue | StatFiValue | OverpassValue;
 
-
-interface CacheEntry<T extends CacheValue> {
+// interface CacheEntry<T extends CacheValue> { // Make T less restrictive
+interface CacheEntry<T> {
     value: T;
     timestamp: number;
 }
 
-export class SimpleCache<T extends CacheValue> {
+// export class SimpleCache<T extends CacheValue> { // Make T less restrictive
+export class SimpleCache<T> {
     private cache = new Map<string, CacheEntry<T>>();
     private defaultTtl: number; // TTL in milliseconds
     private name: string;       // Name for logging

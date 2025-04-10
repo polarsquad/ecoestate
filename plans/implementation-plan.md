@@ -36,12 +36,12 @@ Develop a web app providing interactive map-based visualizations and correlation
 - [x] Create backend endpoints to fetch:
     - [x] Property prices (Statistics Finland API)
     - [x] Green-space data and Public Transport locations (OpenStreetMap, HSY WMS)
+    - [x] Postcode area boundaries
 - [x] Develop automated scheduled tasks to periodically cache/update data
-- [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
 
 ### Deliverables
-- REST API endpoints serving aggregated data and correlations
-- Caching mechanism to optimize API response times
+- [x] REST API endpoints serving aggregated data
+- [x] Caching mechanism to optimize API response times
 
 ---
 
@@ -51,11 +51,10 @@ Develop a web app providing interactive map-based visualizations and correlation
 - [ ] Integrate React mapping library (Leaflet or Mapbox GL JS)
 - [ ] Render property prices and environmental data on interactive map layers
 - [ ] Implement UI components to toggle visibility of layers (green-space, transport)
-- [ ] Develop detailed pop-ups providing correlation insights at selected locations
 
 ### Deliverables
-- Interactive, fully functional map interface
-- Layer toggling and user-friendly UI interactions
+- [ ] Interactive, fully functional map interface
+- [ ] Layer toggling and user-friendly UI interactions
 
 ---
 
@@ -75,6 +74,8 @@ Develop a web app providing interactive map-based visualizations and correlation
 ## ✅ Phase 5: Refinement & Documentation
 
 ### Tasks
+- [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
+- [ ] Develop detailed pop-ups providing correlation insights at selected locations
 - [ ] Write user-friendly documentation and usage guidelines
 - [ ] Document code clearly (frontend/backend)
 - [ ] Collect initial user feedback and address critical issues
