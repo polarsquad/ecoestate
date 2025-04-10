@@ -87,6 +87,15 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ---
 
+## Testing rules
+
+- Both frontend and backend code needs tests
+- Test-driven development should be used
+  - If an implementation already exists, it is OK for tests written against it to succeed
+- When making changes, be sure to always run tests to verify their correctness
+
+---
+
 ## 🔮 Future Expansion Opportunities (Beyond MVP)
 
 - Advanced correlation analysis (regression, ML predictions)
