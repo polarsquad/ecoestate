@@ -1,0 +1,86 @@
+.year-slider-container {
+    position: absolute;
+    top: 10px;
+    /* Position from the top */
+    right: 10px;
+    /* Position from the right */
+    background-color: rgba(255, 255, 255, 0.8);
+    /* Semi-transparent white */
+    padding: 10px 15px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    /* Ensure it's above map layers */
+    display: flex;
+    flex-direction: column;
+    /* Stack label and slider vertically */
+    align-items: center;
+    font-family: Arial, sans-serif;
+    color: #333;
+    min-width: 180px;
+    /* Give it some width */
+}
+
+.year-slider-container label {
+    margin-bottom: 8px;
+    /* Space between label and slider */
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.year-slider {
+    width: 100%;
+    /* Make slider take full width of container */
+    cursor: pointer;
+    margin-bottom: 5px;
+    /* Space below slider */
+}
+
+.year-slider-labels {
+    display: flex;
+    justify-content: space-between;
+    /* Space out min and max labels */
+    width: 100%;
+    font-size: 11px;
+    color: #555;
+}
+
+/* Basic styling for the slider track and thumb (optional, adjust as needed) */
+.year-slider::-webkit-slider-runnable-track {
+    height: 5px;
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.year-slider::-moz-range-track {
+    height: 5px;
+    background: #ddd;
+    border-radius: 3px;
+}
+
+.year-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    /* Override default look */
+    appearance: none;
+    width: 15px;
+    /* Thumb width */
+    height: 15px;
+    /* Thumb height */
+    background: #646cff;
+    /* Thumb color */
+    border-radius: 50%;
+    /* Make it circular */
+    cursor: pointer;
+    margin-top: -5px;
+    /* Center thumb vertically */
+}
+
+.year-slider::-moz-range-thumb {
+    width: 15px;
+    height: 15px;
+    background: #646cff;
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    /* Remove default border */
+}
