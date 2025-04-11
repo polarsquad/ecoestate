@@ -5,7 +5,7 @@ alwaysApply: false
 ---
 # Test-Driven Development (TDD) Workflow Rule
 
-**Type:** Guideline
+**Type:** Strict rule
 
 ## Rule Description
 This rule outlines the mandatory workflow for implementing new functionality or fixing bugs using a Test-Driven Development (TDD) approach. The goal is to ensure that tests are written *before* the implementation code, guiding the development process and verifying correctness.
