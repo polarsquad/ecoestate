@@ -174,39 +174,42 @@ const PostcodeBoundaries: React.FC = () => {
         if (!postalCode) return;
 
         const priceData = propertyPrices.find(p => p.postalCode === postalCode);
-        let popupContent = `<b>Postcode: ${postalCode}</b>`;
+        let tooltipContent = `<b>Postcode: ${postalCode}</b>`; // Start with postcode
         if (priceData) {
-            popupContent += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
+            tooltipContent += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
             const priceInfo = Object.entries(priceData.prices)
                 .filter(([key, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
                 .map(([type, price]) => `${type}: ${price} €/m²`);
             if (priceInfo.length > 0) {
-                popupContent += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
+                tooltipContent += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
             } else {
-                popupContent += 'No valid price data available';
+                tooltipContent += 'No valid price data available';
             }
         } else {
-            popupContent += '<br/>No property price data found for this area';
+            tooltipContent += '<br/>No property price data found for this area';
         }
 
-        if (layer.getPopup()) {
-            layer.setPopupContent(popupContent);
-        } else {
-            layer.bindPopup(popupContent);
-        }
+        // Bind sticky tooltip instead of popup
+        layer.bindTooltip(tooltipContent, {
+            sticky: true,
+            className: 'custom-tooltip' // Optional: Add a class for styling
+        });
 
-        layer.off(); // Remove previous listeners to prevent duplicates
+        // Remove previous listeners to prevent duplicates
+        layer.off();
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
                 targetLayer.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.8 });
                 targetLayer.bringToFront();
-                targetLayer.openPopup();
+                // Explicitly open the tooltip on hover
+                targetLayer.openTooltip();
             },
             mouseout: (e) => {
                 const targetLayer = e.target;
                 targetLayer.setStyle(style(feature)); // Use the style function
-                targetLayer.closePopup();
+                // Explicitly close the tooltip on mouseout
+                targetLayer.closeTooltip();
             }
         });
     }, [propertyPrices, style]);
