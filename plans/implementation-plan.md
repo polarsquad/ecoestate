@@ -53,9 +53,9 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [x] Snapshot of prices for a specific year shown per postcode and visualized with a
         heatmap
   - [x] Ability to select the year for which prices are shown
-  - [ ] Ability to select between multiple togglable visualizations
+  - [x] Ability to select between multiple togglable visualizations
         (the heatmap is the first one)
-  - [ ] Different togglable visualization for price trend
+  - [x] Different togglable visualization for price trend
         (toggle between this and the heatmap)
 - [ ] Render environmental data on interactive map layers
 - [ ] Implement UI components to toggle visibility of layers (green-space, transport)

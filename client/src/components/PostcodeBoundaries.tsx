@@ -6,6 +6,8 @@ import { FeatureCollection, Feature } from 'geojson';
 import L from 'leaflet';
 import Legend from './Legend';
 import YearSlider from './YearSlider';
+import PeriodSlider from './PeriodSlider';
+import VisualizationSelector, { VisualizationType } from './VisualizationSelector';
 
 // Define the coordinate systems
 // EPSG:3879 - Helsinki local coordinate system (used by HSY)
@@ -24,6 +26,23 @@ interface PropertyPrice {
     };
 }
 
+// Define interface for price trend data
+interface PriceTrend {
+    postalCode: string;
+    district: string;
+    municipality: string;
+    fullLabel: string;
+    trends: {
+        [buildingType: string]: {
+            percentChange: number;
+            direction: 'up' | 'down' | 'stable';
+            startPrice: number | null;
+            endPrice: number | null;
+            averageYearlyChange: number;
+        } | null;
+    };
+}
+
 const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 2010;
 const DEFAULT_YEAR = 2023;
@@ -31,26 +50,36 @@ const DEFAULT_YEAR = 2023;
 const PostcodeBoundaries: React.FC = () => {
     const [boundariesGeoJSON, setBoundariesGeoJSON] = useState<FeatureCollection | null>(null);
     const [propertyPrices, setPropertyPrices] = useState<PropertyPrice[]>([]);
+    const [priceTrends, setPriceTrends] = useState<PriceTrend[]>([]);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedYear, setSelectedYear] = useState<number>(DEFAULT_YEAR);
+    const [selectedEndYear, setSelectedEndYear] = useState<number>(DEFAULT_YEAR);
+    const [visualizationType, setVisualizationType] = useState<VisualizationType>('heatmap');
+
+    const [boundariesLoaded, setBoundariesLoaded] = useState<boolean>(false);
+    const [dataLoadedForMode, setDataLoadedForMode] = useState<boolean>(false);
 
     const map = useMap();
 
-    // Handler for year change from slider
     const handleYearChange = useCallback((year: number) => {
         setSelectedYear(year);
     }, []);
 
-    // Transform coordinates from EPSG:3879 to EPSG:4326
+    const handlePeriodChange = useCallback((endYear: number) => {
+        setSelectedEndYear(endYear);
+    }, []);
+
+    const handleVisualizationChange = useCallback((type: VisualizationType) => {
+        setVisualizationType(type);
+        setDataLoadedForMode(false);
+    }, []);
+
     const transformCoordinates = useCallback((geoJSON: FeatureCollection): FeatureCollection => {
-        // Create a deep copy to avoid mutating the original object
         const transformed = JSON.parse(JSON.stringify(geoJSON));
 
-        // Process each feature
         transformed.features.forEach((feature: any) => {
             if (feature.geometry.type === 'Polygon') {
-                // Transform each coordinate in each ring of the polygon
                 feature.geometry.coordinates.forEach((ring: number[][]) => {
                     for (let i = 0; i < ring.length; i++) {
                         const [x, y] = ring[i];
@@ -74,12 +103,10 @@ const PostcodeBoundaries: React.FC = () => {
         return transformed;
     }, []);
 
-    // Function to fetch property price data
     const fetchPropertyPrices = useCallback(async (year: number) => {
-        // API expects year as string
         const yearString = year.toString();
         try {
-            const response = await axios.get<{ data: PropertyPrice[] }>(`http://localhost:3001/api/property-prices?year=${yearString}`);
+            const response = await axios.get<{ data: PropertyPrice[] }>(`/api/property-prices?year=${yearString}`);
             return response.data.data;
         } catch (error) {
             console.error(`Error fetching property prices for year ${yearString}:`, error);
@@ -87,14 +114,23 @@ const PostcodeBoundaries: React.FC = () => {
         }
     }, []);
 
-    // Calculate color based on property price
+    const fetchPriceTrends = useCallback(async (endYear: number) => {
+        try {
+            const response = await axios.get<{ data: PriceTrend[] }>(`/api/property-prices/trends?endYear=${endYear}`);
+            return response.data.data;
+        } catch (error) {
+            console.error(`Error fetching price trends ending at ${endYear}:`, error);
+            throw new Error(`Failed to fetch price trends ending at ${endYear}.`);
+        }
+    }, []);
+
     const getPriceColor = useCallback((postalCode: string): string => {
         if (!propertyPrices.length) {
-            return '#cccccc'; // Use grey as default during load
+            return '#cccccc';
         }
         const priceData = propertyPrices.find(p => p.postalCode === postalCode);
         if (!priceData) {
-            return '#cccccc'; // Grey for no data match
+            return '#cccccc';
         }
         const apartmentTypes = [
             "Kerrostalo yksiöt", "Kerrostalo kaksiot", "Kerrostalo kolmiot+", "Rivitalot yhteensä"
@@ -118,131 +154,298 @@ const PostcodeBoundaries: React.FC = () => {
         return '#d73027';
     }, [propertyPrices]);
 
+    const getTrendColor = useCallback((postalCode: string): string => {
+        if (!priceTrends.length) {
+            return '#cccccc';
+        }
+
+        const trendData = priceTrends.find(p => p.postalCode === postalCode);
+        if (!trendData) {
+            return '#cccccc';
+        }
+
+        const apartmentTypes = [
+            "Kerrostalo yksiöt", "Kerrostalo kaksiot", "Kerrostalo kolmiot+", "Rivitalot yhteensä"
+        ];
+
+        const changes: number[] = [];
+        for (const type of apartmentTypes) {
+            if (trendData.trends[type] && trendData.trends[type]?.percentChange !== undefined) {
+                changes.push(trendData.trends[type]!.percentChange);
+            }
+        }
+
+        if (changes.length === 0) return '#cccccc';
+        const avgChange = changes.reduce((sum, change) => sum + change, 0) / changes.length;
+
+        if (avgChange <= -15) return '#d73027';
+        if (avgChange < -5) return '#fc8d59';
+        if (avgChange < 0) return '#fee08b';
+        if (avgChange < 5) return '#d9ef8b';
+        if (avgChange < 15) return '#91cf60';
+        return '#1a9850';
+    }, [priceTrends]);
+
+    const getFeatureColor = useCallback((postalCode: string): string => {
+        switch (visualizationType) {
+            case 'trend':
+                return getTrendColor(postalCode);
+            case 'heatmap':
+            default:
+                return getPriceColor(postalCode);
+        }
+    }, [getPriceColor, getTrendColor, visualizationType]);
+
     useEffect(() => {
         let isMounted = true;
-        const loadData = async () => {
-            if (!isMounted) return;
+        const fetchBoundaries = async () => {
+            if (boundariesGeoJSON) return;
+            console.log("Attempting to fetch boundaries...");
             setIsLoading(true);
             setError(null);
             try {
-                const pricesData = await fetchPropertyPrices(selectedYear);
-                let currentBoundaries = boundariesGeoJSON;
-                if (!currentBoundaries) {
-                    const boundariesResponse = await axios.get<FeatureCollection>('http://localhost:3001/api/postcodes');
-                    if (!boundariesResponse.data) {
-                        throw new Error('Failed to fetch boundary data.');
+                const boundariesResponse = await axios.get<FeatureCollection>('/api/postcodes');
+
+                // Robust check for valid FeatureCollection structure
+                if (!boundariesResponse.data ||
+                    !boundariesResponse.data.features ||
+                    !Array.isArray(boundariesResponse.data.features) ||
+                    boundariesResponse.data.features.length === 0) {
+                    console.error("Invalid boundary data received:", boundariesResponse.data);
+                    throw new Error('Failed to fetch boundary data (invalid, empty, or missing features array).');
+                }
+
+                const transformedBoundaries = transformCoordinates(boundariesResponse.data);
+                transformedBoundaries.features.forEach((feature: any) => {
+                    const props = feature.properties;
+                    if (props && props.posno) {
+                        feature.properties.postalCode = props.posno;
+                    } else {
+                        // Log if a feature is missing the postcode property
+                        // console.warn('Feature missing posno property:', feature.properties);
                     }
-                    currentBoundaries = transformCoordinates(boundariesResponse.data);
-                    currentBoundaries.features.forEach((feature: any) => {
-                        const props = feature.properties;
-                        if (props && props.posno) {
-                            feature.properties.postalCode = props.posno;
-                        }
-                    });
-                }
+                });
                 if (isMounted) {
-                    setBoundariesGeoJSON(currentBoundaries);
-                    setPropertyPrices(pricesData);
-                    setIsLoading(false);
+                    console.log("Boundaries fetched and transformed successfully.");
+                    setBoundariesGeoJSON(transformedBoundaries);
+                    setBoundariesLoaded(true);
                 }
-            } catch (error: any) {
-                console.error('Error loading data:', error);
+            } catch (err: any) {
+                console.error('Error fetching boundaries:', err);
                 if (isMounted) {
-                    setError(error.message || 'Failed to load data');
+                    setError(`Failed to load boundary data: ${err.message}`);
                     setIsLoading(false);
-                    setPropertyPrices([]);
+                    setBoundariesLoaded(false);
                 }
             }
         };
-        loadData();
+        fetchBoundaries();
         return () => { isMounted = false; };
-    }, [selectedYear, boundariesGeoJSON, fetchPropertyPrices, transformCoordinates]);
+    }, [transformCoordinates]);
 
-    // Style function for the GeoJSON layer
+    useEffect(() => {
+        if (!boundariesLoaded) {
+            console.log("Skipping mode data fetch: Boundaries not loaded yet.");
+            return;
+        }
+
+        let isMounted = true;
+        const loadModeData = async () => {
+            console.log(`Fetching data for mode: ${visualizationType}, year/period: ${visualizationType === 'heatmap' ? selectedYear : selectedEndYear}`);
+            setDataLoadedForMode(false);
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                if (visualizationType === 'heatmap') {
+                    const pricesData = await fetchPropertyPrices(selectedYear);
+                    if (isMounted) {
+                        setPropertyPrices(pricesData);
+                        setPriceTrends([]);
+                        setDataLoadedForMode(true);
+                        console.log(`Heatmap data loaded for ${selectedYear}`);
+                    }
+                } else if (visualizationType === 'trend') {
+                    const trendsData = await fetchPriceTrends(selectedEndYear);
+                    if (isMounted) {
+                        setPriceTrends(trendsData);
+                        setPropertyPrices([]);
+                        setDataLoadedForMode(true);
+                        console.log(`Trend data loaded for period ending ${selectedEndYear}`);
+                    }
+                }
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            } catch (err: any) {
+                console.error(`Error loading ${visualizationType} data:`, err);
+                if (isMounted) {
+                    setError(err.message || `Failed to load ${visualizationType} data`);
+                    setIsLoading(false);
+                    setPropertyPrices([]);
+                    setPriceTrends([]);
+                    setDataLoadedForMode(false);
+                }
+            }
+        };
+
+        loadModeData();
+        return () => { isMounted = false; };
+    }, [visualizationType, selectedYear, selectedEndYear, boundariesLoaded, fetchPropertyPrices, fetchPriceTrends]);
+
     const style = useCallback((feature?: Feature) => {
         const postalCode = feature?.properties?.postalCode;
-        return {
-            fillColor: postalCode ? getPriceColor(postalCode) : '#cccccc',
-            weight: 1, opacity: 1, color: 'white', dashArray: '3', fillOpacity: 0.7
-        };
-    }, [getPriceColor]);
+        const defaultStyle = { weight: 1, opacity: 1, color: 'white', dashArray: '3', fillOpacity: 0.7, fillColor: '#cccccc' };
 
-    // Handle for each feature
+        if (!postalCode || !dataLoadedForMode) {
+            return defaultStyle;
+        }
+
+        return {
+            ...defaultStyle,
+            fillColor: getFeatureColor(postalCode),
+        };
+    }, [getFeatureColor, dataLoadedForMode]);
+
     const onEachFeature = useCallback((feature: Feature, layer: L.Layer) => {
         if (!feature || !feature.properties) return;
         const postalCode = feature.properties.postalCode;
         if (!postalCode) return;
 
-        const priceData = propertyPrices.find(p => p.postalCode === postalCode);
-        let tooltipContent = `<b>Postcode: ${postalCode}</b>`; // Start with postcode
-        if (priceData) {
-            tooltipContent += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
-            const priceInfo = Object.entries(priceData.prices)
-                .filter(([key, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
-                .map(([type, price]) => `${type}: ${price} €/m²`);
-            if (priceInfo.length > 0) {
-                tooltipContent += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
-            } else {
-                tooltipContent += 'No valid price data available';
+        const getTooltipContent = () => {
+            let content = `<b>Postcode: ${postalCode}</b>`;
+            if (!dataLoadedForMode) {
+                content += `<br/><i>Loading data...</i>`;
+                return content;
             }
-        } else {
-            tooltipContent += '<br/>No property price data found for this area';
-        }
 
-        // Bind sticky tooltip instead of popup
-        layer.bindTooltip(tooltipContent, {
+            if (visualizationType === 'heatmap') {
+                const priceData = propertyPrices.find(p => p.postalCode === postalCode);
+                if (priceData) {
+                    content += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
+                    const priceInfo = Object.entries(priceData.prices)
+                        .filter(([_, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
+                        .map(([type, price]) => `${type}: ${price} €/m²`);
+                    if (priceInfo.length > 0) {
+                        content += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
+                    } else {
+                        content += 'No valid price data available for this year';
+                    }
+                } else {
+                    content += '<br/>No property price data found for this year';
+                }
+            } else if (visualizationType === 'trend') {
+                const trendData = priceTrends.find(p => p.postalCode === postalCode);
+                if (trendData) {
+                    content += `<br/><b>${trendData.district}, ${trendData.municipality}</b><br/><hr/>`;
+                    content += `<b>Price Trends (${selectedEndYear - 4}-${selectedEndYear}):</b><br/>`;
+                    const trendInfo = Object.entries(trendData.trends)
+                        .filter(([_, data]) => data !== null)
+                        .map(([type, data]) => {
+                            if (!data) return '';
+                            const directionArrow = data.direction === 'up' ? '↑' : data.direction === 'down' ? '↓' : '→';
+                            return `${type}: ${data.percentChange.toFixed(1)}% ${directionArrow} (${data.startPrice ?? 'N/A'} → ${data.endPrice ?? 'N/A'} €/m²)`;
+                        })
+                        .filter(info => info !== '');
+                    if (trendInfo.length > 0) {
+                        content += trendInfo.join('<br/>');
+                    } else {
+                        content += 'No valid trend data available for this period';
+                    }
+                } else {
+                    content += '<br/>No price trend data found for this period';
+                }
+            }
+            return content;
+        };
+
+        layer.bindTooltip(getTooltipContent, {
             sticky: true,
-            className: 'custom-tooltip' // Optional: Add a class for styling
+            className: 'custom-tooltip'
         });
 
-        // Remove previous listeners to prevent duplicates
         layer.off();
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
+                targetLayer.setTooltipContent(getTooltipContent());
                 targetLayer.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.8 });
                 targetLayer.bringToFront();
-                // Explicitly open the tooltip on hover
                 targetLayer.openTooltip();
             },
             mouseout: (e) => {
                 const targetLayer = e.target;
-                targetLayer.setStyle(style(feature)); // Use the style function
-                // Explicitly close the tooltip on mouseout
+                const baseStyle = style(feature);
+                targetLayer.setStyle(baseStyle);
                 targetLayer.closeTooltip();
             }
         });
-    }, [propertyPrices, style]);
+    }, [propertyPrices, priceTrends, visualizationType, style, selectedEndYear, dataLoadedForMode]);
 
-    if (isLoading && !boundariesGeoJSON) {
+    if (!boundariesLoaded && isLoading) {
         return <div style={{ textAlign: 'center', padding: '20px' }}>Loading map data...</div>;
     }
-    if (error && !boundariesGeoJSON) {
-        console.error('Rendering error:', error);
-        return <div style={{ color: 'red', textAlign: 'center', padding: '20px' }}>Error loading map data: {error}</div>;
+    if (error) {
+        return <div style={{ color: 'red', textAlign: 'center', padding: '20px' }}>Error: {error}</div>;
     }
-    const priceError = error && boundariesGeoJSON ? <div style={{ position: 'absolute', top: 60, left: 10, background: 'rgba(255,0,0,0.7)', color: 'white', padding: '5px', zIndex: 1000, borderRadius: '4px' }}>Error loading price data for {selectedYear}</div> : null;
+    if (boundariesLoaded && (!boundariesGeoJSON || boundariesGeoJSON.features.length === 0)) {
+        return <div style={{ textAlign: 'center', padding: '20px' }}>No postcode boundary data available.</div>;
+    }
+
+    const modeDataIsLoading = isLoading && boundariesLoaded;
+    const showGeoJson = boundariesLoaded && dataLoadedForMode;
+
+    const legendTitle = visualizationType === 'heatmap'
+        ? `Property Prices (€/m²)`
+        : `Price Trend ${selectedEndYear - 4}-${selectedEndYear}`;
 
     return (
         <>
-            {priceError}
-            {boundariesGeoJSON && boundariesGeoJSON.features.length > 0 ? (
+            {modeDataIsLoading && (
+                <div style={{ position: 'absolute', top: 10, left: '50%', transform: 'translateX(-50%)', background: 'rgba(0,0,0,0.6)', color: 'white', padding: '5px 10px', borderRadius: '3px', zIndex: 1100 }}>
+                    Loading {visualizationType} data...
+                </div>
+            )}
+
+            {showGeoJson && boundariesGeoJSON && boundariesGeoJSON.features.length > 0 ? (
                 <GeoJSON
-                    key={selectedYear}
+                    key={`${visualizationType}-${visualizationType === 'heatmap' ? selectedYear : selectedEndYear}`}
                     data={boundariesGeoJSON}
                     style={style as any}
                     onEachFeature={onEachFeature}
                 />
             ) : (
-                !isLoading && <div style={{ textAlign: 'center', padding: '20px' }}>No postcode boundary data available.</div>
+                boundariesLoaded && !showGeoJson && !modeDataIsLoading && (
+                    <div style={{ textAlign: 'center', padding: '20px' }}>Select a visualization type.</div>
+                )
             )}
-            <Legend title={`Property Prices (€/m²)`} />
-            <YearSlider
-                minYear={START_YEAR}
-                maxYear={CURRENT_YEAR - 1}
-                selectedYear={selectedYear}
-                onChange={handleYearChange}
-            />
+
+            {boundariesLoaded && (
+                <>
+                    <Legend title={legendTitle} />
+                    {visualizationType === 'heatmap' ? (
+                        <YearSlider
+                            key="year-slider"
+                            minYear={START_YEAR}
+                            maxYear={CURRENT_YEAR - 1}
+                            selectedYear={selectedYear}
+                            onChange={handleYearChange}
+                        />
+                    ) : (
+                        <PeriodSlider
+                            key="period-slider"
+                            minYear={START_YEAR}
+                            maxYear={CURRENT_YEAR - 1}
+                            endYear={selectedEndYear}
+                            onChange={handlePeriodChange}
+                        />
+                    )}
+                    <VisualizationSelector
+                        currentType={visualizationType}
+                        onChange={handleVisualizationChange}
+                    />
+                </>
+            )}
         </>
     );
 };

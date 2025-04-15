@@ -2,7 +2,8 @@ import axios from 'axios';
 import {
     JsonStatResponse,
     PostalCodeData,
-    BuildingPrices
+    BuildingPrices,
+    PriceTrendData
 } from '../types/statfi.types'; // Import types
 import { SimpleCache } from '../utils/cache'; // Import the generic cache
 
@@ -172,4 +173,99 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
 export function clearStatFiCache() {
     statFiCache.clear();
     // Log message handled by SimpleCache
+}
+
+/**
+ * Calculates price trends based on yearly data.
+ * @param yearlyData An array of PostalCodeData arrays, one for each year in the period.
+ * @param startYear The first year of the period.
+ * @param endYear The last year of the period.
+ * @returns An array of objects containing postal code info and calculated trends.
+ */
+export function calculatePriceTrends(yearlyData: PostalCodeData[][], startYear: number, endYear: number): PriceTrendData[] {
+    const postalCodeMap = new Map<string, PriceTrendData>();
+
+    // First, gather all postal codes across all years and initialize map entries
+    for (const yearData of yearlyData) {
+        for (const item of yearData) {
+            if (!postalCodeMap.has(item.postalCode)) {
+                postalCodeMap.set(item.postalCode, {
+                    postalCode: item.postalCode,
+                    district: item.district,
+                    municipality: item.municipality,
+                    fullLabel: item.fullLabel,
+                    trends: {}
+                });
+            }
+        }
+    }
+
+    // Building types to analyze
+    const buildingTypes = [
+        "Kerrostalo yksiöt",
+        "Kerrostalo kaksiot",
+        "Kerrostalo kolmiot+",
+        "Rivitalot yhteensä"
+    ];
+
+    // For each postal code, calculate trend for each building type
+    postalCodeMap.forEach((postalCodeTrendData) => {
+        for (const buildingType of buildingTypes) {
+            const yearlyPrices: (number | null)[] = [];
+
+            // Extract prices for this building type across the years
+            for (let i = 0; i < yearlyData.length; i++) {
+                const yearData = yearlyData[i];
+                const postalCodeYearData = yearData.find(item => item.postalCode === postalCodeTrendData.postalCode);
+                const price = postalCodeYearData?.prices[buildingType];
+
+                if (price && price !== 'N/A' && !isNaN(Number(price))) {
+                    yearlyPrices.push(Number(price));
+                } else {
+                    yearlyPrices.push(null);
+                }
+            }
+
+            // Calculate trend if we have at least two valid prices
+            const validPrices = yearlyPrices.filter(p => p !== null) as number[];
+            const firstValidPriceIndex = yearlyPrices.findIndex(p => p !== null);
+
+            // Replace findLastIndex with a loop for broader compatibility
+            let lastValidPriceIndex = -1;
+            for (let i = yearlyPrices.length - 1; i >= 0; i--) {
+                if (yearlyPrices[i] !== null) {
+                    lastValidPriceIndex = i;
+                    break;
+                }
+            }
+
+            if (validPrices.length >= 2 && lastValidPriceIndex > firstValidPriceIndex) {
+                const startPrice = yearlyPrices[firstValidPriceIndex];
+                const endPrice = yearlyPrices[lastValidPriceIndex];
+                const duration = Math.max(1, lastValidPriceIndex - firstValidPriceIndex); // Years between first/last data points
+
+                // Ensure start and end prices are valid and startPrice is not zero
+                if (startPrice !== null && startPrice !== 0 && endPrice !== null) {
+                    const percentChange = ((endPrice - startPrice) / startPrice) * 100;
+                    const direction = percentChange > 1 ? 'up' : percentChange < -1 ? 'down' : 'stable';
+                    const yearlyChange = percentChange / duration;
+
+                    postalCodeTrendData.trends[buildingType] = {
+                        percentChange: parseFloat(percentChange.toFixed(2)),
+                        direction,
+                        startPrice,
+                        endPrice,
+                        averageYearlyChange: parseFloat(yearlyChange.toFixed(2))
+                    };
+                } else {
+                    postalCodeTrendData.trends[buildingType] = null; // Handle cases with insufficient spread or zero start price
+                }
+            } else {
+                postalCodeTrendData.trends[buildingType] = null; // Not enough data points
+            }
+        }
+    });
+
+    // Convert map to array for response
+    return Array.from(postalCodeMap.values());
 } 

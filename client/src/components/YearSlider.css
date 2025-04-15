@@ -1,48 +1,41 @@
-.year-slider-container {
+.year-slider {
     position: absolute;
-    top: 10px;
-    /* Position from the top */
-    right: 10px;
-    /* Position from the right */
-    background-color: rgba(255, 255, 255, 0.8);
-    /* Semi-transparent white */
-    padding: 10px 15px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    bottom: 40px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 1000;
-    /* Ensure it's above map layers */
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 12px 15px;
+    border-radius: 5px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
     display: flex;
     flex-direction: column;
-    /* Stack label and slider vertically */
     align-items: center;
-    font-family: Arial, sans-serif;
-    color: #333;
-    min-width: 180px;
-    /* Give it some width */
+    width: 300px;
+    max-width: 90%;
 }
 
-.year-slider-container label {
-    margin-bottom: 8px;
-    /* Space between label and slider */
-    font-size: 13px;
+.year-slider-label {
+    margin-bottom: 10px;
+    font-size: 14px;
     font-weight: bold;
+    color: #333;
+    text-align: center;
 }
 
-.year-slider {
+.year-slider-input {
     width: 100%;
-    /* Make slider take full width of container */
+    margin: 0;
     cursor: pointer;
-    margin-bottom: 5px;
-    /* Space below slider */
 }
 
-.year-slider-labels {
+.year-slider-values {
     display: flex;
     justify-content: space-between;
-    /* Space out min and max labels */
     width: 100%;
-    font-size: 11px;
-    color: #555;
+    font-size: 12px;
+    color: #666;
+    margin-top: 5px;
 }
 
 /* Basic styling for the slider track and thumb (optional, adjust as needed) */

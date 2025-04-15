@@ -32,19 +32,18 @@ const YearSlider: React.FC<YearSliderProps> = ({
 
     return (
         // Attach the ref to the container div
-        <div ref={sliderRef} className="year-slider-container">
-            <label htmlFor="year-slider">Year: {selectedYear}</label>
+        <div ref={sliderRef} className="year-slider">
+            <div className="year-slider-label">Year: {selectedYear}</div>
             <input
                 type="range"
-                id="year-slider"
                 min={minYear}
                 max={maxYear}
                 step="1"
                 value={selectedYear}
                 onChange={handleChange}
-                className="year-slider"
+                className="year-slider-input"
             />
-            <div className="year-slider-labels">
+            <div className="year-slider-values">
                 <span>{minYear}</span>
                 <span>{maxYear}</span>
             </div>

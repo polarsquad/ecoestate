@@ -31,6 +31,23 @@ export interface PostalCodeData {
     prices: BuildingPrices;
 }
 
+// Type for the calculated trend data
+export interface PriceTrendData {
+    postalCode: string;
+    district: string;
+    municipality: string;
+    fullLabel: string;
+    trends: {
+        [buildingType: string]: {
+            percentChange: number;
+            direction: 'up' | 'down' | 'stable';
+            startPrice: number | null;
+            endPrice: number | null;
+            averageYearlyChange: number;
+        } | null; // Allow null if trend couldn't be calculated
+    };
+}
+
 // --- Type for console.table output in testStatFiApi.ts script ---
 export interface TableRow {
     'Postal Code': string;

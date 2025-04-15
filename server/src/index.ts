@@ -1,9 +1,9 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors'; // Import CORS middleware
-import propertyPricesRouter from './routes/propertyPrices'; // Import the new router
 import mapDataRouter from './routes/mapDataRoutes'; // Import the map data router
 import hsyWmsRouter from './routes/hsyWmsRoutes'; // Import the HSY WMS router
 import postcodeRoutes from './routes/postcodeRoutes'; // Import the postcode router
+import propertyPricesAndTrendsRouter from './routes/propertyPricesRoutes'; // Renamed import for clarity
 import { initializeScheduledTasks } from './scheduledTasks'; // Import the scheduler initializer
 
 const app = express();
@@ -25,7 +25,7 @@ app.get('/', (req: Request, res: Response) => {
 });
 
 // Mount routers
-app.use('/api/property-prices', propertyPricesRouter);
+app.use('/api/property-prices', propertyPricesAndTrendsRouter);
 app.use('/api/map-data', mapDataRouter); // Mount the new router
 app.use('/api/walking-distance', hsyWmsRouter); // Mount the HSY WMS router
 app.use('/api/postcodes', postcodeRoutes); // Mount the postcode router
