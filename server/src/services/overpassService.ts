@@ -1,13 +1,21 @@
 import axios from 'axios';
 import { OverpassResponse, OverpassElement } from '../types/overpass.types';
-import { SimpleCache } from '../utils/cache'; // Import the generic cache
+import { SimpleCache } from '../utils/cache';
+import osmtogeojson from 'osmtogeojson'; // Import the conversion library
+import { FeatureCollection } from 'geojson'; // Import GeoJSON type
 
-// Define the specific type for this cache's values
-type OverpassValue = OverpassElement[];
+// Define the specific type for this cache's values (now GeoJSON)
+type OverpassValue = FeatureCollection;
 
 // Cache configuration
 const OVERPASS_CACHE_TTL = 1000 * 60 * 60; // 1 hour
-const overpassCache = new SimpleCache<OverpassValue>('Overpass Green Spaces', OVERPASS_CACHE_TTL);
+const overpassCache = new SimpleCache<OverpassValue>('Overpass Green Spaces GeoJSON', OVERPASS_CACHE_TTL);
+
+// Define the static bounding box for the Helsinki Metropolitan Area
+const HELSINKI_REGION_BBOX = '59.9,24.4,60.5,25.4'; // South, West, North, East
+
+// Define a static cache key
+const CACHE_KEY = 'helsinki_region_green_spaces';
 
 // Base URL for the Overpass API
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -51,37 +59,31 @@ function handleApiError(error: any, context: string): void {
 }
 
 /**
- * Fetches green space elements (parks, forests, etc.) around a given coordinate
- * from the Overpass API. Uses an in-memory cache.
+ * Fetches green space elements for the Helsinki Metropolitan Area
+ * from the Overpass API and converts them to GeoJSON. Uses an in-memory cache.
  *
- * @param lat Latitude of the center point.
- * @param lon Longitude of the center point.
- * @param radius Search radius in meters.
- * @returns A promise resolving to an array of OverpassElement objects representing green spaces.
+ * @returns A promise resolving to a GeoJSON FeatureCollection representing green spaces.
  */
-export async function fetchGreenSpaces(lat: number, lon: number, radius: number): Promise<OverpassElement[]> {
-    const cacheKey = `${lat},${lon},${radius}`;
-
-    // Check cache
-    const cachedValue = overpassCache.get(cacheKey);
+export async function fetchGreenSpaces(): Promise<FeatureCollection> {
+    // Check cache using the static key
+    const cachedValue = overpassCache.get(CACHE_KEY);
     if (cachedValue !== undefined) {
         return cachedValue;
     }
 
-    console.log(`Cache miss for key "${cacheKey}" in [Overpass Green Spaces]. Querying Overpass API...`);
+    console.log(`Cache miss for key "${CACHE_KEY}" in [Overpass Green Spaces GeoJSON]. Querying Overpass API for Helsinki region...`);
 
-    // Construct the Overpass QL query
-    // Find nodes, ways, and relations matching the green space tags within the radius
+    // Construct the Overpass QL query using the static bbox
     const tagsQueryPart = greenSpaceTags.map(tag => {
         const [key, value] = tag.split('=');
         return `
-      node["${key}"="${value}"](around:${radius},${lat},${lon});
-      way["${key}"="${value}"](around:${radius},${lat},${lon});
-      relation["${key}"="${value}"](around:${radius},${lat},${lon});`;
+      node["${key}"="${value}"];
+      way["${key}"="${value}"];
+      relation["${key}"="${value}"];`;
     }).join('');
 
     const overpassQuery = `
-        [out:json][timeout:25];
+        [out:json][timeout:60][bbox:${HELSINKI_REGION_BBOX}]; // Use static bbox, increase timeout
         (
           ${tagsQueryPart}
         );
@@ -99,23 +101,29 @@ export async function fetchGreenSpaces(lat: number, lon: number, radius: number)
             }
         );
 
-        const result = response.data?.elements ?? []; // Default to empty array if no elements
-        if (response.data && response.data.elements) {
-            console.log(`Successfully received ${result.length} green space elements from Overpass API.`);
-        } else {
-            console.warn('No elements found in Overpass API response or unexpected format.');
-            console.log('Raw Response Snippet:', JSON.stringify(response.data).substring(0, 500));
+        // Check if the response data is valid Overpass JSON format
+        if (!response.data || typeof response.data !== 'object' || !response.data.elements) {
+            console.warn('Unexpected Overpass API response format:', response.data);
+            // Return empty GeoJSON to avoid errors downstream
+            const emptyGeoJson: FeatureCollection = { type: 'FeatureCollection', features: [] };
+            overpassCache.set(CACHE_KEY, emptyGeoJson); // Use static key
+            return emptyGeoJson;
         }
-        // Cache the result (even if empty)
-        overpassCache.set(cacheKey, result);
-        return result;
+
+        // Convert the Overpass response data to GeoJSON
+        const geojsonData = osmtogeojson(response.data) as FeatureCollection;
+
+        console.log(`Successfully received and converted ${geojsonData.features.length} green space features from Overpass API for Helsinki region.`);
+
+        // Cache the GeoJSON result using the static key
+        overpassCache.set(CACHE_KEY, geojsonData);
+        return geojsonData;
 
     } catch (error: any) {
         handleApiError(error, 'fetchGreenSpaces');
+        // Return empty GeoJSON on error to prevent breaking the frontend
         // Do not cache errors
-        // Depending on requirements, could return empty array or re-throw
-        // Returning empty for now to avoid breaking potential consumers
-        return [];
+        return { type: 'FeatureCollection', features: [] };
     }
 }
 

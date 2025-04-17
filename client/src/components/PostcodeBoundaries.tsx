@@ -1,13 +1,14 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { GeoJSON, useMap } from 'react-leaflet';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
+import { GeoJSON, useMap, useMapEvents } from 'react-leaflet';
 import axios from 'axios';
 import proj4 from 'proj4';
-import { FeatureCollection, Feature } from 'geojson';
-import L from 'leaflet';
+import { FeatureCollection, Feature, GeoJsonProperties } from 'geojson';
+import L, { LatLngBounds } from 'leaflet';
 import Legend from './Legend';
 import YearSlider from './YearSlider';
 import PeriodSlider from './PeriodSlider';
 import VisualizationSelector, { VisualizationType } from './VisualizationSelector';
+import LayerControl from './LayerControl';
 
 // Define the coordinate systems
 // EPSG:3879 - Helsinki local coordinate system (used by HSY)
@@ -43,14 +44,24 @@ interface PriceTrend {
     };
 }
 
+// Green Space specific type
+// Use intersection type instead of extends
+type GreenSpaceProperties = GeoJsonProperties & {
+    name?: string;
+    // Add other potential properties from OSM if needed
+};
+
 const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 2010;
 const DEFAULT_YEAR = 2023;
+
+const GREEN_SPACE_PANE = 'greenSpacePane'; // Define pane name
 
 const PostcodeBoundaries: React.FC = () => {
     const [boundariesGeoJSON, setBoundariesGeoJSON] = useState<FeatureCollection | null>(null);
     const [propertyPrices, setPropertyPrices] = useState<PropertyPrice[]>([]);
     const [priceTrends, setPriceTrends] = useState<PriceTrend[]>([]);
+    const [greenSpacesGeoJSON, setGreenSpacesGeoJSON] = useState<FeatureCollection<any, GreenSpaceProperties> | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedYear, setSelectedYear] = useState<number>(DEFAULT_YEAR);
@@ -59,8 +70,10 @@ const PostcodeBoundaries: React.FC = () => {
 
     const [boundariesLoaded, setBoundariesLoaded] = useState<boolean>(false);
     const [dataLoadedForMode, setDataLoadedForMode] = useState<boolean>(false);
+    const [greenSpacesLoading, setGreenSpacesLoading] = useState<boolean>(false);
+    const [showGreenSpaces, setShowGreenSpaces] = useState<boolean>(true);
 
-    const map = useMap();
+    const map = useMap(); // Get map instance
 
     const handleYearChange = useCallback((year: number) => {
         setSelectedYear(year);
@@ -73,6 +86,10 @@ const PostcodeBoundaries: React.FC = () => {
     const handleVisualizationChange = useCallback((type: VisualizationType) => {
         setVisualizationType(type);
         setDataLoadedForMode(false);
+    }, []);
+
+    const handleToggleGreenSpaces = useCallback(() => {
+        setShowGreenSpaces(prev => !prev);
     }, []);
 
     const transformCoordinates = useCallback((geoJSON: FeatureCollection): FeatureCollection => {
@@ -121,6 +138,28 @@ const PostcodeBoundaries: React.FC = () => {
         } catch (error) {
             console.error(`Error fetching price trends ending at ${endYear}:`, error);
             throw new Error(`Failed to fetch price trends ending at ${endYear}.`);
+        }
+    }, []);
+
+    const fetchGreenSpacesData = useCallback(async () => {
+        setGreenSpacesLoading(true);
+        try {
+            console.log(`Fetching green spaces for Helsinki region...`)
+            const response = await axios.get<FeatureCollection<any, GreenSpaceProperties>>(`/api/map-data/green-spaces`);
+
+            if (response.data?.type === 'FeatureCollection') {
+                setGreenSpacesGeoJSON(response.data);
+                console.log(`Green spaces loaded: ${response.data.features.length} features`);
+            } else {
+                console.warn('Received invalid green space data structure:', response.data);
+                setGreenSpacesGeoJSON(null);
+            }
+        } catch (error) {
+            console.error(`Error fetching green spaces:`, error);
+            // Optionally set an error state specific to green spaces
+            // setGreenSpacesError('Failed to load green spaces.');
+        } finally {
+            setGreenSpacesLoading(false);
         }
     }, []);
 
@@ -196,104 +235,7 @@ const PostcodeBoundaries: React.FC = () => {
         }
     }, [getPriceColor, getTrendColor, visualizationType]);
 
-    useEffect(() => {
-        let isMounted = true;
-        const fetchBoundaries = async () => {
-            if (boundariesGeoJSON) return;
-            console.log("Attempting to fetch boundaries...");
-            setIsLoading(true);
-            setError(null);
-            try {
-                const boundariesResponse = await axios.get<FeatureCollection>('/api/postcodes');
-
-                // Robust check for valid FeatureCollection structure
-                if (!boundariesResponse.data ||
-                    !boundariesResponse.data.features ||
-                    !Array.isArray(boundariesResponse.data.features) ||
-                    boundariesResponse.data.features.length === 0) {
-                    console.error("Invalid boundary data received:", boundariesResponse.data);
-                    throw new Error('Failed to fetch boundary data (invalid, empty, or missing features array).');
-                }
-
-                const transformedBoundaries = transformCoordinates(boundariesResponse.data);
-                transformedBoundaries.features.forEach((feature: any) => {
-                    const props = feature.properties;
-                    if (props && props.posno) {
-                        feature.properties.postalCode = props.posno;
-                    } else {
-                        // Log if a feature is missing the postcode property
-                        // console.warn('Feature missing posno property:', feature.properties);
-                    }
-                });
-                if (isMounted) {
-                    console.log("Boundaries fetched and transformed successfully.");
-                    setBoundariesGeoJSON(transformedBoundaries);
-                    setBoundariesLoaded(true);
-                }
-            } catch (err: any) {
-                console.error('Error fetching boundaries:', err);
-                if (isMounted) {
-                    setError(`Failed to load boundary data: ${err.message}`);
-                    setIsLoading(false);
-                    setBoundariesLoaded(false);
-                }
-            }
-        };
-        fetchBoundaries();
-        return () => { isMounted = false; };
-    }, [transformCoordinates]);
-
-    useEffect(() => {
-        if (!boundariesLoaded) {
-            console.log("Skipping mode data fetch: Boundaries not loaded yet.");
-            return;
-        }
-
-        let isMounted = true;
-        const loadModeData = async () => {
-            console.log(`Fetching data for mode: ${visualizationType}, year/period: ${visualizationType === 'heatmap' ? selectedYear : selectedEndYear}`);
-            setDataLoadedForMode(false);
-            setIsLoading(true);
-            setError(null);
-
-            try {
-                if (visualizationType === 'heatmap') {
-                    const pricesData = await fetchPropertyPrices(selectedYear);
-                    if (isMounted) {
-                        setPropertyPrices(pricesData);
-                        setPriceTrends([]);
-                        setDataLoadedForMode(true);
-                        console.log(`Heatmap data loaded for ${selectedYear}`);
-                    }
-                } else if (visualizationType === 'trend') {
-                    const trendsData = await fetchPriceTrends(selectedEndYear);
-                    if (isMounted) {
-                        setPriceTrends(trendsData);
-                        setPropertyPrices([]);
-                        setDataLoadedForMode(true);
-                        console.log(`Trend data loaded for period ending ${selectedEndYear}`);
-                    }
-                }
-                if (isMounted) {
-                    setIsLoading(false);
-                }
-            } catch (err: any) {
-                console.error(`Error loading ${visualizationType} data:`, err);
-                if (isMounted) {
-                    setError(err.message || `Failed to load ${visualizationType} data`);
-                    setIsLoading(false);
-                    setPropertyPrices([]);
-                    setPriceTrends([]);
-                    setDataLoadedForMode(false);
-                }
-            }
-        };
-
-        loadModeData();
-        return () => { isMounted = false; };
-    }, [visualizationType, selectedYear, selectedEndYear, boundariesLoaded, fetchPropertyPrices, fetchPriceTrends]);
-
-    const style = useCallback((feature?: Feature) => {
+    const styleBoundaries = useCallback((feature?: Feature) => {
         const postalCode = feature?.properties?.postalCode;
         const defaultStyle = { weight: 1, opacity: 1, color: 'white', dashArray: '3', fillOpacity: 0.7, fillColor: '#cccccc' };
 
@@ -307,7 +249,16 @@ const PostcodeBoundaries: React.FC = () => {
         };
     }, [getFeatureColor, dataLoadedForMode]);
 
-    const onEachFeature = useCallback((feature: Feature, layer: L.Layer) => {
+    const styleGreenSpaces = (feature?: Feature<any, GreenSpaceProperties>) => {
+        return {
+            fillColor: '#228B22', // ForestGreen
+            fillOpacity: 0.5,
+            color: '#1A681A', // Darker green border
+            weight: 1,
+        };
+    };
+
+    const onEachBoundaryFeature = useCallback((feature: Feature, layer: L.Layer) => {
         if (!feature || !feature.properties) return;
         const postalCode = feature.properties.postalCode;
         if (!postalCode) return;
@@ -370,17 +321,134 @@ const PostcodeBoundaries: React.FC = () => {
                 const targetLayer = e.target;
                 targetLayer.setTooltipContent(getTooltipContent());
                 targetLayer.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.8 });
-                targetLayer.bringToFront();
                 targetLayer.openTooltip();
             },
             mouseout: (e) => {
                 const targetLayer = e.target;
-                const baseStyle = style(feature);
+                const baseStyle = styleBoundaries(feature);
                 targetLayer.setStyle(baseStyle);
                 targetLayer.closeTooltip();
             }
         });
-    }, [propertyPrices, priceTrends, visualizationType, style, selectedEndYear, dataLoadedForMode]);
+    }, [propertyPrices, priceTrends, visualizationType, styleBoundaries, selectedEndYear, dataLoadedForMode]);
+
+    const onEachGreenSpaceFeature = (feature: Feature<any, GreenSpaceProperties>, layer: L.Layer) => {
+        if (feature.properties?.name) {
+            layer.bindTooltip(feature.properties.name);
+        }
+    };
+
+    // Effect to create custom map pane for green spaces
+    useEffect(() => {
+        if (map) {
+            map.createPane(GREEN_SPACE_PANE);
+            const pane = map.getPane(GREEN_SPACE_PANE);
+            if (pane) {
+                pane.style.zIndex = '410'; // Above default overlay pane (400)
+            }
+        }
+    }, [map]); // Run when map instance is available
+
+    // Effect to load boundaries and green spaces
+    useEffect(() => {
+        let isMounted = true;
+        const fetchBoundariesAndGreenSpaces = async () => {
+            if (boundariesGeoJSON) return;
+            console.log("Attempting to fetch boundaries...");
+            setIsLoading(true);
+            setError(null);
+            try {
+                const boundariesResponse = await axios.get<FeatureCollection>('/api/postcodes');
+
+                // Robust check for valid FeatureCollection structure
+                if (!boundariesResponse.data ||
+                    !boundariesResponse.data.features ||
+                    !Array.isArray(boundariesResponse.data.features) ||
+                    boundariesResponse.data.features.length === 0) {
+                    console.error("Invalid boundary data received:", boundariesResponse.data);
+                    throw new Error('Failed to fetch boundary data (invalid, empty, or missing features array).');
+                }
+
+                const transformedBoundaries = transformCoordinates(boundariesResponse.data);
+                transformedBoundaries.features.forEach((feature: any) => {
+                    const props = feature.properties;
+                    if (props && props.posno) {
+                        feature.properties.postalCode = props.posno;
+                    } else {
+                        // Log if a feature is missing the postcode property
+                        // console.warn('Feature missing posno property:', feature.properties);
+                    }
+                });
+                if (isMounted) {
+                    console.log("Boundaries fetched and transformed successfully.");
+                    setBoundariesGeoJSON(transformedBoundaries);
+                    setBoundariesLoaded(true);
+
+                    // Now fetch green spaces since boundaries are loaded
+                    fetchGreenSpacesData();
+                }
+            } catch (err: any) {
+                console.error('Error fetching boundaries:', err);
+                if (isMounted) {
+                    setError(`Failed to load boundary data: ${err.message}`);
+                    setIsLoading(false);
+                    setBoundariesLoaded(false);
+                }
+            }
+        };
+        fetchBoundariesAndGreenSpaces();
+        return () => { isMounted = false; };
+    }, [transformCoordinates, fetchGreenSpacesData]);
+
+    useEffect(() => {
+        if (!boundariesLoaded) {
+            console.log("Skipping mode data fetch: Boundaries not loaded yet.");
+            return;
+        }
+
+        let isMounted = true;
+        const loadModeData = async () => {
+            console.log(`Fetching data for mode: ${visualizationType}, year/period: ${visualizationType === 'heatmap' ? selectedYear : selectedEndYear}`);
+            setDataLoadedForMode(false);
+            setIsLoading(true);
+            setError(null);
+
+            try {
+                if (visualizationType === 'heatmap') {
+                    const pricesData = await fetchPropertyPrices(selectedYear);
+                    if (isMounted) {
+                        setPropertyPrices(pricesData);
+                        setPriceTrends([]);
+                        setDataLoadedForMode(true);
+                        console.log(`Heatmap data loaded for ${selectedYear}`);
+                    }
+                } else if (visualizationType === 'trend') {
+                    const trendsData = await fetchPriceTrends(selectedEndYear);
+                    if (isMounted) {
+                        setPriceTrends(trendsData);
+                        setPropertyPrices([]);
+                        setDataLoadedForMode(true);
+                        console.log(`Trend data loaded for period ending ${selectedEndYear}`);
+                    }
+                }
+                if (isMounted) {
+                    setIsLoading(false);
+                }
+            } catch (err: any) {
+                console.error(`Error loading ${visualizationType} data:`, err);
+                if (isMounted) {
+                    setError(err.message || `Failed to load ${visualizationType} data`);
+                    setIsLoading(false);
+                    setPropertyPrices([]);
+                    setPriceTrends([]);
+                    setDataLoadedForMode(false);
+                }
+            }
+        };
+
+        loadModeData();
+        return () => { isMounted = false; };
+    }, [visualizationType, selectedYear, selectedEndYear, boundariesLoaded, fetchPropertyPrices, fetchPriceTrends]);
 
     if (!boundariesLoaded && isLoading) {
         return <div style={{ textAlign: 'center', padding: '20px' }}>Loading map data...</div>;
@@ -409,16 +477,36 @@ const PostcodeBoundaries: React.FC = () => {
 
             {showGeoJson && boundariesGeoJSON && boundariesGeoJSON.features.length > 0 ? (
                 <GeoJSON
-                    key={`${visualizationType}-${visualizationType === 'heatmap' ? selectedYear : selectedEndYear}`}
+                    key={`${visualizationType}-${selectedYear}-${selectedEndYear}`}
                     data={boundariesGeoJSON}
-                    style={style as any}
-                    onEachFeature={onEachFeature}
+                    style={styleBoundaries}
+                    onEachFeature={onEachBoundaryFeature}
                 />
             ) : (
                 boundariesLoaded && !showGeoJson && !modeDataIsLoading && (
                     <div style={{ textAlign: 'center', padding: '20px' }}>Select a visualization type.</div>
                 )
             )}
+
+            <div className="top-right-controls">
+                <VisualizationSelector currentType={visualizationType} onChange={handleVisualizationChange} />
+                <LayerControl
+                    showGreenSpaces={showGreenSpaces}
+                    onToggleGreenSpaces={handleToggleGreenSpaces}
+                />
+            </div>
+
+            {showGreenSpaces && greenSpacesGeoJSON && (
+                <GeoJSON
+                    key="green-spaces"
+                    data={greenSpacesGeoJSON}
+                    style={styleGreenSpaces}
+                    onEachFeature={onEachGreenSpaceFeature}
+                    pane={GREEN_SPACE_PANE} // Assign to custom pane
+                />
+            )}
+
+            {greenSpacesLoading && <div className="loading-indicator-small">Loading Green Spaces...</div>}
 
             {boundariesLoaded && (
                 <>
@@ -440,10 +528,6 @@ const PostcodeBoundaries: React.FC = () => {
                             onChange={handlePeriodChange}
                         />
                     )}
-                    <VisualizationSelector
-                        currentType={visualizationType}
-                        onChange={handleVisualizationChange}
-                    />
                 </>
             )}
         </>

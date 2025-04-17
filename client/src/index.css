@@ -86,3 +86,40 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+
+/* --- Custom Component Styles --- */
+
+/* Container for top-right UI controls */
+.top-right-controls {
+  position: absolute;
+  top: 20px;
+  /* Position the whole group */
+  right: 20px;
+  z-index: 1000;
+  /* Ensure it's above map tiles */
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Space between VisualizationSelector and LayerControl */
+  align-items: flex-end;
+  /* Align children to the right */
+}
+
+/* Specific adjustments if needed, e.g., for Leaflet attribution */
+.leaflet-bottom.leaflet-right {
+  margin-bottom: 10px;
+  /* Add some margin if controls get too close */
+}
+
+/* Small loading indicator style (example) */
+.loading-indicator-small {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 3px 8px;
+  font-size: 12px;
+  border-radius: 3px;
+}
