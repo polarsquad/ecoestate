@@ -57,25 +57,26 @@ Develop a web app providing interactive map-based visualizations and correlation
         (the heatmap is the first one)
   - [x] Different togglable visualization for price trend
         (toggle between this and the heatmap)
-- [ ] Render environmental data on interactive map layers
-- [ ] Implement UI components to toggle visibility of layers (green-space, transport)
+- [x] Render environmental data on interactive map layers
+- [x] Implement UI components to toggle visibility of layers (green-space)
 
 ### Deliverables
-- [ ] Interactive, fully functional map interface
-- [ ] Layer toggling and user-friendly UI interactions
+- [x] Interactive, fully functional map interface
+- [x] Layer toggling and user-friendly UI interactions
 
 ---
 
 ## ✅ Phase 4: Deployment and Testing
 
 ### Tasks
-- [ ] Deploy backend and frontend to cloud service (e.g., Railway, Vercel, or Fly.io)
+- [ ] Create Dockerfiles for frontend & backend
+- [ ] Deploy backend and frontend to Azure Container Apps (use Terraform for IaC)
 - [ ] Configure environment variables securely
 - [ ] Test deployment thoroughly (API responsiveness, frontend interactivity)
 - [ ] Conduct performance tests (loading speed, API latency)
 
 ### Deliverables
-- Publicly accessible, functional MVP web application
+- [ ] Publicly accessible, functional MVP web application
 
 ---
 
