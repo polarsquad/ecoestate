@@ -123,13 +123,4 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ### Libraries:
 - **Frontend:** React, Leaflet.js or Mapbox GL JS, Axios, Tailwind CSS
-- **Backend:** Express.js, Axios, TypeORM or Prisma, Node-cron (for scheduled jobs)
-
----
-
-## 🚩 Next Actions:
-
-The basic project setup is complete! Next steps:
-1. Register for required API keys (Statistics Finland)
-2. Create exploratory scripts to verify API data availability
-3. Proceed to Phase 2 (Data Integration and Backend Development)
+- **Backend:** Express.js, Axios, Prisma, Node-cron (for scheduled jobs)
