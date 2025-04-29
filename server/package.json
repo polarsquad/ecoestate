@@ -5,6 +5,7 @@
   "scripts": {
     "test": "jest",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
+    "build": "tsc --project tsconfig.json",
     "test:statfi": "ts-node src/scripts/testStatFiApi.ts",
     "test:openaq": "ts-node src/scripts/testOpenAQApi.ts",
     "test:hsywms": "ts-node src/scripts/testHSYWmsApi.ts",

@@ -1,9 +1,9 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { GeoJSON, useMap, useMapEvents } from 'react-leaflet';
+import React, { useEffect, useState, useCallback } from 'react';
+import { GeoJSON, useMap } from 'react-leaflet';
 import axios from 'axios';
 import proj4 from 'proj4';
-import { FeatureCollection, Feature, GeoJsonProperties } from 'geojson';
-import L, { LatLngBounds } from 'leaflet';
+import L from 'leaflet';
+import { Feature, FeatureCollection, GeoJsonProperties } from 'geojson';
 import Legend from './Legend';
 import YearSlider from './YearSlider';
 import PeriodSlider from './PeriodSlider';
@@ -249,7 +249,7 @@ const PostcodeBoundaries: React.FC = () => {
         };
     }, [getFeatureColor, dataLoadedForMode]);
 
-    const styleGreenSpaces = (feature?: Feature<any, GreenSpaceProperties>) => {
+    const styleGreenSpaces = () => {
         return {
             fillColor: '#228B22', // ForestGreen
             fillOpacity: 0.5,

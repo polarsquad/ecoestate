@@ -47,6 +47,16 @@ EcoEstate follows a classic three-tier architecture:
    - Geospatial data processing for correlation analysis
    - Query optimization for large datasets
 
+5. **Containerization Pattern (Implemented)**
+   - **Multi-Stage Dockerfiles**: Both `client/Dockerfile` and `server/Dockerfile` use multi-stage builds with distinct `development` and `production` targets.
+   - **Docker Compose Orchestration**: `docker-compose.yml` manages the `frontend` and `backend` services for local development, using the `development` stage from the Dockerfiles.
+   - **Dependency Management**: `npm install` is run within the `development` stage image build. Named volumes (`frontend_node_modules`, `backend_node_modules`) are used in Compose to persist `node_modules` during runtime and prevent conflicts with local directories.
+   - **Live Reloading**: Volume mounts (`./client:/app`, `./server:/app`) enable live code reloading within the containers.
+   - **Dev Server Configuration**: Frontend dev server (Vite) is configured with `--host` to accept connections mapped from the host.
+   - **API Proxy**: Vite's proxy is configured dynamically using the `VITE_API_PROXY_TARGET` environment variable (`vite.config.ts`), allowing it to target `http://localhost:3001` for local dev and `http://backend:3001` when run via Docker Compose (set in `docker-compose.yml`).
+   - **Container Communication**: Services within Docker Compose communicate through the internal Docker network using service names as hostnames (e.g., `backend` service is accessible from the `frontend` service).
+   - **Environment Isolation**: Each service has its own environment variables specified in the Docker Compose configuration, allowing for contextual configuration.
+
 ## Critical Implementation Paths
 
 1. **Data Integration Flow**
@@ -57,6 +67,9 @@ EcoEstate follows a classic three-tier architecture:
 
 3. **Correlation Analysis Flow**
    - Data Selection → Geospatial Joining → Statistical Analysis → Visualization → User Insights
+
+4. **Containerized Development Flow**
+   - Code Changes → Hot Reload in Container → Live Updates in Browser → Immediate Feedback Loop
 
 ## Component Relationships
 

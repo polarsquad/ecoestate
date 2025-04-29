@@ -31,26 +31,58 @@
 - **Containerization**: Docker
 - **Cloud Platform**: Azure Container Apps
 - **Infrastructure as Code**: Terraform
-- **CI/CD**: (To be determined)
+- **CI/CD**: GitHub Actions or Azure DevOps (to be finalized)
 
 ## Development Setup
 
 ### Local Environment Requirements
-- Node.js (latest LTS version)
-- npm or yarn
-- TypeScript
-- Database instance (PostgreSQL or SQLite)
-- API keys for external services
+- **Primary Method**: Docker Compose
+- Docker and Docker Compose
+- Git for version control
+- Code editor supporting Docker Compose (VS Code recommended)
+- API keys for external services (managed via `.env` locally)
+
+### Containerized Development (Docker Compose)
+- **Multi-Service Architecture**: `docker-compose.yml` at project root orchestrates frontend and backend services (with optional database service that can be uncommented).
+- **Container Builds**: Uses multi-stage Dockerfiles (`client/Dockerfile`, `server/Dockerfile`) with distinct `development` and `production` targets.
+- **Development Target**: The `development` stage in each Dockerfile includes an `npm install` step to ensure dev dependencies are available.
+- **Host-Container Communication**: Frontend container (Vite) uses the `--host` flag to accept connections from the host machine.
+- **Port Mapping**:
+  - Frontend: `3000:5173` (host:container) maps Vite's default port
+  - Backend: `3001:3001` for API access
+- **API Proxy Configuration**: 
+  - `client/vite.config.ts` uses `loadEnv` to read the `VITE_API_PROXY_TARGET` environment variable for configuring the `/api` proxy target
+  - Defaults to `http://localhost:3001` when running outside of Docker
+  - Docker Compose sets `VITE_API_PROXY_TARGET=http://backend:3001` for the `frontend` service to ensure correct proxying within the Docker network
+- **Volume Management**:
+  - Named volumes (`frontend_node_modules`, `backend_node_modules`) to persist `node_modules` and prevent conflicts with local directories
+  - Host directory mounting (`./client:/app`, `./server:/app`) for live code changes
+- **Hot Reloading**: Code changes on the host are immediately reflected in the running containers
+- **Environment Variables**: Managed through Docker Compose for each service
 
 ### Project Structure
 - `/client` - Frontend React application
+  - `Dockerfile` - Multi-stage Docker configuration for frontend
+  - `vite.config.ts` - Vite configuration with dynamic API proxy
+  - `package.json` - Frontend dependencies and scripts
 - `/server` - Backend Node.js/Express API
+  - `Dockerfile` - Multi-stage Docker configuration for backend
+  - `package.json` - Backend dependencies and scripts
 - `/plans` - Project documentation and planning
 - `/memory-bank` - Cursor.ai assistant memory
+- `docker-compose.yml` - Docker Compose configuration for local development
+- `README.md` - Project documentation and setup instructions
 
 ### API Keys Management
 - Development: Local .env files (not committed to git)
-- Production: Secure environment variables in Azure
+- Production: Secure environment variables in Azure (planned)
+
+### Build & Development Tools
+- TypeScript compiler
+- ESLint for code quality
+- Prettier for code formatting
+- Vite for frontend building 
+- `@types/node` (dev dependency in client for `vite.config.ts`)
 
 ## Technical Constraints
 

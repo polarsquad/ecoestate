@@ -49,7 +49,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ### Tasks
 - [x] Integrate React mapping library (Leaflet or Mapbox GL JS)
-- [ ] Render property price data on interactive map layers
+- [x] Render property price data on interactive map layers
   - [x] Snapshot of prices for a specific year shown per postcode and visualized with a
         heatmap
   - [x] Ability to select the year for which prices are shown
@@ -66,21 +66,69 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ---
 
-## ✅ Phase 4: Deployment and Testing
+## 🔄 Phase 4: Deployment and Testing
 
-### Tasks
-- [ ] Create Dockerfiles for frontend & backend
-- [ ] Deploy backend and frontend to Azure Container Apps (use Terraform for IaC)
+### Completed Tasks
+
+#### ✅ Containerization
+- [x] Frontend Container Setup
+  - [x] Created multi-stage Dockerfile for frontend
+  - [x] Added .dockerignore file for frontend
+  - [x] Tested frontend container build and run locally
+
+- [x] Backend Container Setup
+  - [x] Created multi-stage Dockerfile for backend
+  - [x] Added .dockerignore file for backend
+  - [x] Tested backend container build and run locally
+
+- [x] Docker Compose for Local Development
+  - [x] Created docker-compose.yml in project root
+  - [x] Implemented named volumes for node_modules
+  - [x] Configured environment variables for service communication
+  - [x] Tested and verified Docker Compose setup
+
+### 🔄 Next Steps to Complete
+
+#### Infrastructure as Code Setup
+- [ ] Create Terraform configuration for Azure infrastructure
+  - [ ] Define Azure Container Registry resource
+  - [ ] Configure Azure Container Apps environment
+  - [ ] Setup networking resources (VNet, subnets if needed)
+  - [ ] Create variables for environment-specific configurations
+
+#### Secrets and Environment Management
 - [ ] Configure environment variables securely
-- [ ] Test deployment thoroughly (API responsiveness, frontend interactivity)
-- [ ] Conduct performance tests (loading speed, API latency)
+  - [ ] Setup Azure Key Vault for secrets management
+  - [ ] Configure environment variable injection into containers
+  - [ ] Ensure proper separation of dev/staging/prod environments
+
+#### CI/CD Pipeline
+- [ ] Setup automated build and deployment
+  - [ ] Create GitHub Actions or Azure DevOps pipeline
+  - [ ] Configure build, test, and deployment stages
+  - [ ] Set up automated testing before deployment
+
+#### Deployment and Verification
+- [ ] Deploy backend and frontend to Azure Container Apps
+  - [ ] Push container images to registry
+  - [ ] Deploy containers using Terraform
+  - [ ] Configure load balancing and scaling rules
+- [ ] Test deployment thoroughly
+  - [ ] Verify API responsiveness in production environment
+  - [ ] Test frontend interactivity in production
+  - [ ] Conduct performance tests (loading speed, API latency)
+  - [ ] Test on multiple browsers and devices
 
 ### Deliverables
+- [x] Containerized applications (frontend and backend)
+- [x] Docker Compose configuration for local development
 - [ ] Publicly accessible, functional MVP web application
+- [ ] CI/CD pipeline for automated deployments
+- [ ] Infrastructure as Code templates for reproducible environments
 
 ---
 
-## ✅ Phase 5: Refinement & Documentation
+## ⬜ Phase 5: Refinement & Documentation
 
 ### Tasks
 - [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)

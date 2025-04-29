@@ -1,0 +1,39 @@
+---
+description: 
+globs: *.mdc,*.md
+alwaysApply: false
+---
+# No Implementation Code in Planning Files
+
+**Type:** Strict Prohibition
+
+## Rule Description
+Do not add actual implementation code (like completed Dockerfiles, .devcontainer configurations, or application code) to
+planning files. Planning files (located in the `plans/` or `memory-bank/` directories) should only contain high-level descriptions,
+specifications, and task lists - never the actual code implementation.
+
+## Rationale
+Planning documents should maintain a clear separation from implementation. This separation ensures that:
+1. Planning files remain concise and focused on requirements and design decisions
+2. Implementation details are properly placed in the codebase
+3. Plans can be reviewed independently of implementation details
+4. Planning files don't become bloated with code that belongs elsewhere
+
+## Allowed Behavior
+- Adding task descriptions and specifications to planning files
+- Including small code snippets *as examples* when necessary for clarification
+- Referencing implementation approaches at a high level
+- Adding checklists and requirements
+
+## Example Violations
+- Adding complete Dockerfiles or Docker Compose configurations to `plans/implementation-plan.md`
+- Inserting fully-implemented JavaScript/TypeScript functions into planning documents
+- Copying actual configuration files (like .devcontainer.json) into planning files
+
+## Example Allowed Actions
+- Describing Docker container requirements in planning files
+- Outlining what a Dockerfile should include at a high level
+- Mentioning required environment variables or configuration parameters
+- Listing the steps needed to implement a feature
+
+Remember: Implementation goes in implementation files, planning goes in planning files.
