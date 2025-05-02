@@ -87,14 +87,17 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [x] Configured environment variables for service communication
   - [x] Tested and verified Docker Compose setup
 
-### 🔄 Next Steps to Complete
+#### ✅ Infrastructure as Code Setup
+- [x] Create Terraform configuration for Azure infrastructure
+  - [x] Define Azure Container Registry resource
+  - [x] Configure Azure Container Apps environment
+  - [x] Setup networking resources (VNet, subnets if needed)
+  - [x] Create variables for environment-specific configurations
 
-#### Infrastructure as Code Setup
-- [ ] Create Terraform configuration for Azure infrastructure
-  - [ ] Define Azure Container Registry resource
-  - [ ] Configure Azure Container Apps environment
-  - [ ] Setup networking resources (VNet, subnets if needed)
-  - [ ] Create variables for environment-specific configurations
+#### ✅ Deployment Tooling
+- [x] Create script for building, tagging, and pushing Docker images to ACR (`scripts/acr_upload.sh`)
+
+### 🔄 Next Steps to Complete
 
 #### Secrets and Environment Management
 - [ ] Configure environment variables securely
@@ -122,9 +125,9 @@ Develop a web app providing interactive map-based visualizations and correlation
 ### Deliverables
 - [x] Containerized applications (frontend and backend)
 - [x] Docker Compose configuration for local development
+- [x] Infrastructure as Code templates for reproducible environments
 - [ ] Publicly accessible, functional MVP web application
 - [ ] CI/CD pipeline for automated deployments
-- [ ] Infrastructure as Code templates for reproducible environments
 
 ---
 
