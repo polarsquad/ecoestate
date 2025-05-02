@@ -29,7 +29,11 @@ RUN npm install
 CMD ["npm", "run", "dev"]
 
 # Production stage - using Nginx to serve static files
-FROM nginx:alpine AS production
+FROM nginx:1.25-alpine AS production
+
+# Install gettext for envsubst
+RUN apk add --no-cache gettext
+
 WORKDIR /usr/share/nginx/html
 
 # Remove default Nginx static assets
@@ -38,11 +42,15 @@ RUN rm -rf ./*
 # Copy built assets from the build stage
 COPY --from=build /app/dist .
 
-# Add custom Nginx config if needed
-# COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Copy the Nginx config template
+COPY nginx.conf /etc/nginx/templates/default.conf.template
+
+# Copy the entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 # Expose port
 EXPOSE 80
 
-# Start Nginx server
-CMD ["nginx", "-g", "daemon off;"] 
+# Run the entrypoint script
+ENTRYPOINT ["/entrypoint.sh"] 

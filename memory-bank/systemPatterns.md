@@ -6,9 +6,10 @@ EcoEstate follows a classic three-tier architecture:
 
 1. **Frontend (Presentation Layer)**
    - React with TypeScript
-   - Interactive map visualization using Leaflet or Mapbox GL JS
+   - Interactive map visualization using Leaflet.js
    - UI components for data layer toggling and controls
    - Axios for API communication
+   - Served by Nginx (in production container)
 
 2. **Backend (Application Layer)**
    - Node.js with Express
@@ -23,6 +24,17 @@ EcoEstate follows a classic three-tier architecture:
      - HSY WMS (environmental data)
      - OpenStreetMap (geographic data)
      - Digitransit (transport data)
+
+4. **Infrastructure Layer (Azure via Terraform)**
+   - Azure Resource Group (per environment)
+   - Azure Container Registry (ACR) (per environment)
+   - Azure Virtual Network & Subnet
+   - Azure Log Analytics Workspace
+   - Azure Container Apps Environment
+   - Azure Container Apps (frontend & backend)
+     - Frontend ACA includes Nginx reverse proxy
+     - Backend ACA configured for internal HTTPS ingress
+   - Azure User Assigned Managed Identity
 
 ## Key Design Patterns
 
@@ -48,14 +60,28 @@ EcoEstate follows a classic three-tier architecture:
    - Query optimization for large datasets
 
 5. **Containerization Pattern (Implemented)**
-   - **Multi-Stage Dockerfiles**: Both `client/Dockerfile` and `server/Dockerfile` use multi-stage builds with distinct `development` and `production` targets.
-   - **Docker Compose Orchestration**: `docker-compose.yml` manages the `frontend` and `backend` services for local development, using the `development` stage from the Dockerfiles.
-   - **Dependency Management**: `npm install` is run within the `development` stage image build. Named volumes (`frontend_node_modules`, `backend_node_modules`) are used in Compose to persist `node_modules` during runtime and prevent conflicts with local directories.
-   - **Live Reloading**: Volume mounts (`./client:/app`, `./server:/app`) enable live code reloading within the containers.
-   - **Dev Server Configuration**: Frontend dev server (Vite) is configured with `--host` to accept connections mapped from the host.
-   - **API Proxy**: Vite's proxy is configured dynamically using the `VITE_API_PROXY_TARGET` environment variable (`vite.config.ts`), allowing it to target `http://localhost:3001` for local dev and `http://backend:3001` when run via Docker Compose (set in `docker-compose.yml`).
-   - **Container Communication**: Services within Docker Compose communicate through the internal Docker network using service names as hostnames (e.g., `backend` service is accessible from the `frontend` service).
-   - **Environment Isolation**: Each service has its own environment variables specified in the Docker Compose configuration, allowing for contextual configuration.
+   - **Multi-Stage Dockerfiles**: Production frontend image includes Nginx + static build + entrypoint script for proxy config.
+   - **Docker Compose Orchestration**: For local development.
+   - **Dependency Management**: Standard npm practices, named volumes in Compose.
+   - **Live Reloading**: Via volume mounts in Compose.
+   - **Dev Server Configuration**: Vite dev server configured for external connections and API proxying (via env var).
+   - **Production Frontend Serving**: Nginx serves static files and proxies `/api` requests.
+   - **Container Communication**: Docker Compose uses service names; ACA uses internal DNS.
+   - **Environment Isolation**: Via Docker Compose env vars and Terraform variables/workspaces.
+
+6. **Infrastructure as Code (IaC) Pattern (Implemented)**
+   - **Tooling**: Terraform.
+   - **Modularity**: Modules for `acr`, `networking`, `container_apps`.
+   - **Environment Management**: Terraform workspaces (dev, staging, prod).
+   - **State Management**: Remote Azure Blob Storage backend with Azure AD auth.
+   - **Dynamic Configuration**: `app_version` variable in Terraform.
+
+7. **Reverse Proxy Pattern (ACA)**
+   - **Location**: Nginx running inside the frontend container app.
+   - **Purpose**: Route incoming browser requests for `/api/*` to the internal backend container app.
+   - **Mechanism**: `proxy_pass` directive in `nginx.conf` uses an environment variable (`BACKEND_URL`) containing the backend's internal ACA FQDN. Uses HTTPS on port 443.
+   - **Configuration**: Nginx config template (`nginx.conf`) is processed by an `entrypoint.sh` script using `envsubst` to inject the backend URL at container startup.
+   - **Security**: Proxies to the backend's internal HTTPS endpoint; Terraform ensures backend only allows HTTPS ingress.
 
 ## Critical Implementation Paths
 
@@ -71,6 +97,9 @@ EcoEstate follows a classic three-tier architecture:
 4. **Containerized Development Flow**
    - Code Changes → Hot Reload in Container → Live Updates in Browser → Immediate Feedback Loop
 
+5. **Deployment Flow (Manual/Planned CI/CD)**
+   - Code Change → Build Images (`docker build --platform linux/amd64`) → Tag Image (SemVer) → Push to Dev ACR (`scripts/acr_upload.sh -v <ver> -w dev`) → Deploy to Dev Env (`terraform apply -var app_version=<ver>`) → Test → Push to Staging ACR (`scripts/acr_upload.sh -v <ver> -w staging`) → Deploy to Staging Env → Test → Push to Prod ACR → Deploy to Prod Env
+
 ## Component Relationships
 
 - **Map Component**: Core visualization container
@@ -81,4 +110,10 @@ EcoEstate follows a classic three-tier architecture:
 - **Data Service Layer**: Backend abstraction for data sources
   - **Caching Service**: Optimizes API response times
   - **Aggregation Service**: Processes and combines datasets
-  - **Correlation Service**: Analyzes relationships between data points 
+  - **Correlation Service**: Analyzes relationships between data points
+
+- **Infrastructure Components (Terraform)**
+  - **Root Module (`tf/`)**: Orchestrates modules and defines providers/backend.
+  - **ACR Module**: Manages Azure Container Registry resource.
+  - **Networking Module**: Manages VNet and Subnet.
+  - **Container Apps Module**: Manages Log Analytics, ACA Environment, ACA Apps (frontend/backend), Managed Identity, Role Assignment.

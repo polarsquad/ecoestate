@@ -26,32 +26,38 @@
   - Cross-container networking and communication
   - Hot reloading and development-optimized containers
 
+### Deployment Infrastructure (`tf/`)
+- **✅ Terraform configuration implemented for Azure infrastructure:**
+  - Resource Group definition
+  - Azure Container Registry (ACR) module
+  - Networking module (VNet, Subnet)
+  - Container Apps module (Environment, Log Analytics, Apps for frontend/backend, Managed Identity)
+  - Terraform Backend configured for Azure Blob Storage with Azure AD authentication
+  - Terraform Workspaces enabled for environment separation (dev, staging, prod)
+  - Dynamic image versioning via `app_version` variable
+- **✅ Frontend Nginx proxy configured for backend communication in ACA.**
+- **✅ Verified application connectivity in Azure Container Apps.**
+
+### Deployment Tooling (`scripts/`)
+- **✅ ACR Upload Script (`scripts/acr_upload.sh`):**
+  - Builds frontend & backend images for `linux/amd64`
+  - Tags images with Semantic Versioning (`-v` flag)
+  - Pushes images to the correct ACR based on Terraform workspace (`-w` flag)
+  - Authenticates to ACR using Azure CLI (`az acr login`)
+
 ## 🔄 In Progress
 
-- Azure Deployment Infrastructure Planning (Terraform, ACA, ACR)
-- CI/CD Pipeline Planning
+- CI/CD Pipeline Planning & Implementation
 
 ## ⬜ What's Left to Build
 
-### Azure Deployment Infrastructure
-- Azure Container Registry configuration
-- Azure Container Apps environment setup
-- Network configuration and security settings
-- Load balancing and scaling rules
-  
-- **Infrastructure as Code:**
-  - Terraform configuration files
-  - Variables for environment-specific settings
-  
-- **CI/CD Pipeline:**
-  - GitHub Actions or Azure DevOps pipeline
-  - Build, test, and deployment stages
-  - Automated testing before deployment
-  
-- **Secrets Management:**
-  - Azure Key Vault integration
-  - Secure environment variable handling
-  - Environment separation (dev/staging/prod)
+### CI/CD Pipeline
+- GitHub Actions or Azure DevOps pipeline definition
+- Automated build stage
+- Automated test stage
+- Automated image push stage (using `acr_upload.sh`)
+- Automated deployment stage (using Terraform)
+- Secure handling of secrets (e.g., integration with Azure Key Vault)
 
 ### Analysis Features
 - Correlation logic between property prices and environmental factors
@@ -60,12 +66,15 @@
 
 ### Documentation & Testing
 - User documentation and guidelines
-- Code documentation
-- Comprehensive testing (API, frontend, performance)
+- Code documentation (backend, frontend, Terraform)
+- Comprehensive testing (API, frontend, performance, infrastructure)
+- Deployment verification and testing procedures
 
 ## 📊 Current Status
 
-The project has successfully completed Phase 3 of the implementation plan with all frontend visualization features implemented. Phase 4 is now in progress with containerization fully implemented for local development using Docker Compose. The next steps involve Azure infrastructure setup and CI/CD pipeline creation.
+The project has successfully completed Phase 3 and the infrastructure setup (Phase 4a) is now complete and verified. Containerization, Azure infrastructure definition via Terraform (including secure state and environment management), and the image upload script are all functional. Frontend-to-backend communication within the deployed Azure Container Apps environment has been successfully established and verified.
+
+The immediate next step is planning and implementing the CI/CD pipeline (Phase 4b).
 
 ### Completed Phases
 - ✅ Phase 1: Initial Project Setup & Data Exploration
@@ -75,19 +84,20 @@ The project has successfully completed Phase 3 of the implementation plan with a
 ### Current Phase
 - 🔄 Phase 4: Deployment and Testing
   - ✅ Containerization with Docker fully implemented
-  - ✅ Docker Compose setup implemented and functional for multi-service development
-  - 🔄 Planning Azure infrastructure setup with Terraform
-  - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps
+  - ✅ Docker Compose setup implemented and functional
+  - ✅ Azure Infrastructure defined with Terraform (`tf/`) and deployed.
+  - ✅ ACR Image Upload Script created (`scripts/acr_upload.sh`).
+  - ✅ Application connectivity verified in Azure.
+  - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps.
 
 ### Upcoming Phases
 - ⬜ Phase 5: Refinement & Documentation
 
 ## 🔍 Known Issues
 
-- Need to ensure secure handling of API keys and secrets in production environment
-- Container optimization for efficient deployment
-- Planning for proper scaling in Azure environment
-- Development of effective testing strategy for deployed application
+- Need to integrate secrets management (e.g., Azure Key Vault) into Terraform and CI/CD.
+- Need to define scaling rules for Container Apps in Terraform.
+- Comprehensive testing strategy for deployed application still needs development.
 
 ## 📝 Evolution of Project Decisions
 
@@ -101,3 +111,9 @@ The project has successfully completed Phase 3 of the implementation plan with a
 - **Implemented Docker Compose for local multi-service development workflow**
 - **Refined containerization approach with named volumes to preserve node_modules and prevent conflicts**
 - **Configured dynamic environment variables for different runtime contexts (local vs. containerized)**
+- **Adopted Terraform workspaces for environment management**
+- **Configured Terraform backend with Azure AD authentication**
+- **Standardized Docker image tagging using Semantic Versioning**
+- **Created a script for building and pushing versioned images to environment-specific ACRs**
+- **Resolved Terraform deployment issues (subnet delegation, state permissions, image architecture)**
+- **Implemented Nginx reverse proxy in frontend container to handle ACA internal communication.**
