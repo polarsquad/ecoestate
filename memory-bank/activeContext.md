@@ -61,6 +61,7 @@ Based on the implementation plan, the project is currently in the following stat
     - Set necessary Nginx proxy headers (`proxy_http_version`, `proxy_ssl_server_name on`) for ACA environment.
     - Configured Terraform to pass the backend URL to the frontend container via environment variable (`BACKEND_URL`).
     - Ensured backend Container App ingress is configured for HTTPS internal transport.
+- ⚠️ Temporarily disabled frontend fetching/display of green spaces layer due to performance issues with large dataset (`client/src/components/PostcodeBoundaries.tsx`).
 
 ## Next Steps
 
@@ -80,6 +81,9 @@ With the core infrastructure defined and application connectivity verified in Az
 3.  **Testing and Deployment**: 
     - Thoroughly test the application in deployed environments (dev, staging).
     - Deploy the initial version to production.
+
+4.  **Planning for efficient implementation of correlation analysis features**:
+    - **Investigate performance improvements for loading/displaying the green spaces layer** (e.g., backend simplification, alternative data sources, frontend optimization).
 
 ## Active Decisions
 
@@ -119,3 +123,4 @@ With the core infrastructure defined and application connectivity verified in Az
     - Explicitly use HTTPS and port 443 for secure internal ingress.
     - Set `proxy_http_version 1.1`, and `proxy_ssl_server_name on` in Nginx for HTTPS proxying.
     - Pass backend URL via environment variable.
+- **Large datasets from APIs (like Overpass for green spaces) can cause significant frontend performance issues.** Need strategies for data simplification or optimization before displaying on the map.
