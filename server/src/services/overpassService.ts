@@ -3,6 +3,7 @@ import { OverpassResponse, OverpassElement } from '../types/overpass.types';
 import { SimpleCache } from '../utils/cache';
 import osmtogeojson from 'osmtogeojson'; // Import the conversion library
 import { FeatureCollection } from 'geojson'; // Import GeoJSON type
+import simplify from '@turf/simplify'; // Import turf/simplify
 
 // Define the specific type for this cache's values (now GeoJSON)
 type OverpassValue = FeatureCollection;
@@ -12,7 +13,7 @@ const OVERPASS_CACHE_TTL = 1000 * 60 * 60; // 1 hour
 const overpassCache = new SimpleCache<OverpassValue>('Overpass Green Spaces GeoJSON', OVERPASS_CACHE_TTL);
 
 // Define the static bounding box for the Helsinki Metropolitan Area
-const HELSINKI_REGION_BBOX = '59.9,24.4,60.5,25.4'; // South, West, North, East
+const HELSINKI_REGION_BBOX = '60.12,24.5,60.4,25.26'; // South, West, North, East
 
 // Define a static cache key
 const CACHE_KEY = 'helsinki_region_green_spaces';
@@ -113,11 +114,32 @@ export async function fetchGreenSpaces(): Promise<FeatureCollection> {
         // Convert the Overpass response data to GeoJSON
         const geojsonData = osmtogeojson(response.data) as FeatureCollection;
 
-        console.log(`Successfully received and converted ${geojsonData.features.length} green space features from Overpass API for Helsinki region.`);
+        console.log(`Successfully received ${geojsonData.features.length} green space features from Overpass API for Helsinki region. Simplifying...`);
 
-        // Cache the GeoJSON result using the static key
-        overpassCache.set(CACHE_KEY, geojsonData);
-        return geojsonData;
+        // Simplify the GeoJSON
+        // Tolerance value (degrees) - smaller means less simplification.
+        // 0.0001 is roughly 11 meters in Helsinki.
+        // 0.0005 is roughly 55 meters in Helsinki.
+        // Needs careful tuning based on visual inspection.
+        const simplificationOptions = { tolerance: 0.0005, highQuality: false }; // Increased tolerance
+        const simplifiedGeoJson = simplify(geojsonData, simplificationOptions);
+
+        const originalFeatureCount = geojsonData.features.length;
+        const simplifiedFeatureCount = simplifiedGeoJson.features.length;
+        if (originalFeatureCount !== simplifiedFeatureCount) {
+            console.warn(`Simplification changed feature count from ${originalFeatureCount} to ${simplifiedFeatureCount}`);
+        }
+
+        // Rough size comparison (in characters) - more accurate comparison would require byte size
+        const originalSize = JSON.stringify(geojsonData).length;
+        const simplifiedSize = JSON.stringify(simplifiedGeoJson).length;
+        const reductionPercent = originalSize > 0 ? ((originalSize - simplifiedSize) / originalSize * 100).toFixed(1) : 0;
+
+        console.log(`Simplified GeoJSON. Feature count: ${simplifiedFeatureCount}. Approx size reduction: ${reductionPercent}%`);
+
+        // Cache the *simplified* GeoJSON result using the static key
+        overpassCache.set(CACHE_KEY, simplifiedGeoJson);
+        return simplifiedGeoJson;
 
     } catch (error: any) {
         handleApiError(error, 'fetchGreenSpaces');

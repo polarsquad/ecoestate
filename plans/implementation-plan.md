@@ -99,6 +99,13 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ### 🔄 Next Steps to Complete
 
+#### Optimization
+- [ ] **Optimize Green Space Data Loading (GeoJSON Simplification):**
+    - [ ] Install `@turf/simplify` in the backend (`server/`)
+    - [ ] Modify `overpassService.ts` to simplify GeoJSON data after fetching/conversion
+    - [ ] Ensure the simplified GeoJSON is cached instead of the original
+    - [ ] Test simplification: verify data reduction and acceptable visual quality on map
+
 #### Secrets and Environment Management
 - [ ] Configure environment variables securely
   - [ ] Setup Azure Key Vault for secrets management
