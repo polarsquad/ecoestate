@@ -57,6 +57,9 @@ const DEFAULT_YEAR = 2023;
 
 const GREEN_SPACE_PANE = 'greenSpacePane'; // Define pane name
 
+// Flag to completely disable green spaces functionality
+const GREEN_SPACES_ENABLED = false;
+
 const PostcodeBoundaries: React.FC = () => {
     const [boundariesGeoJSON, setBoundariesGeoJSON] = useState<FeatureCollection | null>(null);
     const [propertyPrices, setPropertyPrices] = useState<PropertyPrice[]>([]);
@@ -71,7 +74,10 @@ const PostcodeBoundaries: React.FC = () => {
     const [boundariesLoaded, setBoundariesLoaded] = useState<boolean>(false);
     const [dataLoadedForMode, setDataLoadedForMode] = useState<boolean>(false);
     const [greenSpacesLoading, setGreenSpacesLoading] = useState<boolean>(false);
-    const [showGreenSpaces, setShowGreenSpaces] = useState<boolean>(true);
+    const [showGreenSpaces, setShowGreenSpaces] = useState<boolean>(false); // Default to false since disabled
+
+    // Kept for future - show UI controls for map layers (currently disabled)
+    const [showLayerControls, setShowLayerControls] = useState<boolean>(false);
 
     const map = useMap(); // Get map instance
 
@@ -142,6 +148,12 @@ const PostcodeBoundaries: React.FC = () => {
     }, []);
 
     const fetchGreenSpacesData = useCallback(async () => {
+        // Skip if green spaces are disabled
+        if (!GREEN_SPACES_ENABLED) {
+            console.log('Green spaces functionality is disabled');
+            return;
+        }
+
         setGreenSpacesLoading(true);
         try {
             console.log(`Fetching green spaces for Helsinki region...`)
@@ -340,7 +352,7 @@ const PostcodeBoundaries: React.FC = () => {
 
     // Effect to create custom map pane for green spaces
     useEffect(() => {
-        if (map) {
+        if (map && GREEN_SPACES_ENABLED) {
             map.createPane(GREEN_SPACE_PANE);
             const pane = map.getPane(GREEN_SPACE_PANE);
             if (pane) {
@@ -384,8 +396,10 @@ const PostcodeBoundaries: React.FC = () => {
                     setBoundariesGeoJSON(transformedBoundaries);
                     setBoundariesLoaded(true);
 
-                    // Now fetch green spaces since boundaries are loaded
-                    fetchGreenSpacesData();
+                    // Only fetch green spaces if enabled
+                    if (GREEN_SPACES_ENABLED) {
+                        fetchGreenSpacesData();
+                    }
                 }
             } catch (err: any) {
                 console.error('Error fetching boundaries:', err);
@@ -490,23 +504,30 @@ const PostcodeBoundaries: React.FC = () => {
 
             <div className="top-right-controls">
                 <VisualizationSelector currentType={visualizationType} onChange={handleVisualizationChange} />
-                <LayerControl
-                    showGreenSpaces={showGreenSpaces}
-                    onToggleGreenSpaces={handleToggleGreenSpaces}
-                />
+
+                {/* Only show layer controls if enabled */}
+                {showLayerControls && (
+                    <LayerControl
+                        showGreenSpaces={showGreenSpaces}
+                        onToggleGreenSpaces={handleToggleGreenSpaces}
+                    />
+                )}
             </div>
 
-            {showGreenSpaces && greenSpacesGeoJSON && (
+            {/* Only render green spaces if enabled and loaded */}
+            {GREEN_SPACES_ENABLED && showGreenSpaces && greenSpacesGeoJSON && (
                 <GeoJSON
                     key="green-spaces"
                     data={greenSpacesGeoJSON}
                     style={styleGreenSpaces}
                     onEachFeature={onEachGreenSpaceFeature}
-                    pane={GREEN_SPACE_PANE} // Assign to custom pane
+                    pane={GREEN_SPACE_PANE}
                 />
             )}
 
-            {greenSpacesLoading && <div className="loading-indicator-small">Loading Green Spaces...</div>}
+            {GREEN_SPACES_ENABLED && greenSpacesLoading && (
+                <div className="loading-indicator-small">Loading Green Spaces...</div>
+            )}
 
             {boundariesLoaded && (
                 <>
