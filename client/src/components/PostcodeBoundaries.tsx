@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { GeoJSON, useMap } from 'react-leaflet';
-import axios from 'axios';
+import axios, { AxiosResponse } from 'axios';
 import proj4 from 'proj4';
 import L from 'leaflet';
-import { Feature, FeatureCollection, GeoJsonProperties } from 'geojson';
+import { Feature, FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import Legend from './Legend';
 import YearSlider from './YearSlider';
 import PeriodSlider from './PeriodSlider';
@@ -55,7 +55,7 @@ const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 2010;
 const DEFAULT_YEAR = 2023;
 
-const GREEN_SPACE_PANE = 'greenSpacePane'; // Define pane name
+const GREEN_SPACE_PANE = 'greenSpacePane';
 
 // Flag to completely disable green spaces functionality
 const GREEN_SPACES_ENABLED = false;
@@ -64,7 +64,7 @@ const PostcodeBoundaries: React.FC = () => {
     const [boundariesGeoJSON, setBoundariesGeoJSON] = useState<FeatureCollection | null>(null);
     const [propertyPrices, setPropertyPrices] = useState<PropertyPrice[]>([]);
     const [priceTrends, setPriceTrends] = useState<PriceTrend[]>([]);
-    const [greenSpacesGeoJSON, setGreenSpacesGeoJSON] = useState<FeatureCollection<any, GreenSpaceProperties> | null>(null);
+    const [greenSpacesGeoJSON, setGreenSpacesGeoJSON] = useState<FeatureCollection<Geometry, GreenSpaceProperties> | null>(null);
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [selectedYear, setSelectedYear] = useState<number>(DEFAULT_YEAR);
@@ -77,7 +77,7 @@ const PostcodeBoundaries: React.FC = () => {
     const [showGreenSpaces, setShowGreenSpaces] = useState<boolean>(false); // Default to false since disabled
 
     // Kept for future - show UI controls for map layers (currently disabled)
-    const [showLayerControls, setShowLayerControls] = useState<boolean>(false);
+    const [showLayerControls] = useState<boolean>(false);
 
     const map = useMap(); // Get map instance
 
@@ -101,7 +101,7 @@ const PostcodeBoundaries: React.FC = () => {
     const transformCoordinates = useCallback((geoJSON: FeatureCollection): FeatureCollection => {
         const transformed = JSON.parse(JSON.stringify(geoJSON));
 
-        transformed.features.forEach((feature: any) => {
+        transformed.features.forEach((feature: Feature) => {
             if (feature.geometry.type === 'Polygon') {
                 feature.geometry.coordinates.forEach((ring: number[][]) => {
                     for (let i = 0; i < ring.length; i++) {
@@ -157,7 +157,7 @@ const PostcodeBoundaries: React.FC = () => {
         setGreenSpacesLoading(true);
         try {
             console.log(`Fetching green spaces for Helsinki region...`)
-            const response = await axios.get<FeatureCollection<any, GreenSpaceProperties>>(`/api/map-data/green-spaces`);
+            const response = await axios.get<FeatureCollection<Geometry, GreenSpaceProperties>>(`/api/map-data/green-spaces`);
 
             if (response.data?.type === 'FeatureCollection') {
                 setGreenSpacesGeoJSON(response.data);
@@ -188,6 +188,9 @@ const PostcodeBoundaries: React.FC = () => {
         ];
         let price: number | null = null;
         for (const type of apartmentTypes) {
+            // Use Object.hasOwn for safer check
+            // Reverted to hasOwnProperty due to TS target version
+            // eslint-disable-next-line no-prototype-builtins
             if (priceData.prices.hasOwnProperty(type) &&
                 priceData.prices[type] !== 'N/A' &&
                 !isNaN(Number(priceData.prices[type])) &&
@@ -287,7 +290,7 @@ const PostcodeBoundaries: React.FC = () => {
                 if (priceData) {
                     content += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
                     const priceInfo = Object.entries(priceData.prices)
-                        .filter(([_, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
+                        .filter(([, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
                         .map(([type, price]) => `${type}: ${price} €/m²`);
                     if (priceInfo.length > 0) {
                         content += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
@@ -303,7 +306,7 @@ const PostcodeBoundaries: React.FC = () => {
                     content += `<br/><b>${trendData.district}, ${trendData.municipality}</b><br/><hr/>`;
                     content += `<b>Price Trends (${selectedEndYear - 4}-${selectedEndYear}):</b><br/>`;
                     const trendInfo = Object.entries(trendData.trends)
-                        .filter(([_, data]) => data !== null)
+                        .filter(([, data]) => data !== null)
                         .map(([type, data]) => {
                             if (!data) return '';
                             const directionArrow = data.direction === 'up' ? '↑' : data.direction === 'down' ? '↓' : '→';
@@ -344,7 +347,7 @@ const PostcodeBoundaries: React.FC = () => {
         });
     }, [propertyPrices, priceTrends, visualizationType, styleBoundaries, selectedEndYear, dataLoadedForMode]);
 
-    const onEachGreenSpaceFeature = (feature: Feature<any, GreenSpaceProperties>, layer: L.Layer) => {
+    const onEachGreenSpaceFeature = (feature: Feature<Geometry, GreenSpaceProperties>, layer: L.Layer) => {
         if (feature.properties?.name) {
             layer.bindTooltip(feature.properties.name);
         }
@@ -370,7 +373,8 @@ const PostcodeBoundaries: React.FC = () => {
             setIsLoading(true);
             setError(null);
             try {
-                const boundariesResponse = await axios.get<FeatureCollection>('/api/postcodes');
+                // Explicitly type the FeatureCollection generics
+                const boundariesResponse: AxiosResponse<FeatureCollection<Geometry, GeoJsonProperties>> = await axios.get<FeatureCollection>('/api/postcodes');
 
                 // Robust check for valid FeatureCollection structure
                 if (!boundariesResponse.data ||
@@ -401,10 +405,11 @@ const PostcodeBoundaries: React.FC = () => {
                         fetchGreenSpacesData();
                     }
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
                 console.error('Error fetching boundaries:', err);
                 if (isMounted) {
-                    setError(`Failed to load boundary data: ${err.message}`);
+                    setError(`Failed to load boundary data: ${errorMessage}`);
                     setIsLoading(false);
                     setBoundariesLoaded(false);
                 }
@@ -412,7 +417,7 @@ const PostcodeBoundaries: React.FC = () => {
         };
         fetchBoundariesAndGreenSpaces();
         return () => { isMounted = false; };
-    }, [transformCoordinates, fetchGreenSpacesData]);
+    }, [transformCoordinates, fetchGreenSpacesData, boundariesGeoJSON]);
 
     useEffect(() => {
         if (!boundariesLoaded) {
@@ -448,10 +453,11 @@ const PostcodeBoundaries: React.FC = () => {
                 if (isMounted) {
                     setIsLoading(false);
                 }
-            } catch (err: any) {
+            } catch (err: unknown) {
+                const errorMessage = err instanceof Error ? err.message : String(err);
                 console.error(`Error loading ${visualizationType} data:`, err);
                 if (isMounted) {
-                    setError(err.message || `Failed to load ${visualizationType} data`);
+                    setError(errorMessage || `Failed to load ${visualizationType} data`);
                     setIsLoading(false);
                     setPropertyPrices([]);
                     setPriceTrends([]);
