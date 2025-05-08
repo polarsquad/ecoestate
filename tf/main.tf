@@ -2,7 +2,7 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 3.0"
+      version = "~> 4.0"
     }
   }
   backend "azurerm" {
@@ -38,6 +38,8 @@ terraform {
 
 provider "azurerm" {
   features {}
+  subscription_id = var.azure_subscription_id
+  tenant_id       = var.azure_tenant_id
 }
 
 locals {
@@ -87,6 +89,11 @@ module "container_apps" {
   subnet_id           = module.networking.subnet_id
   app_version         = var.app_version
   tags                = local.tags
+
+  # Custom Domain Configuration
+  frontend_custom_hostname     = "${var.frontend_cname_record_name}.${var.dns_zone_name}"
+  dns_zone_name                = var.dns_zone_name
+  dns_zone_resource_group_name = var.dns_zone_resource_group_name
 
   depends_on = [
     module.acr,

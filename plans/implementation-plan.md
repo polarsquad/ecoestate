@@ -99,6 +99,14 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 ### 🔄 Next Steps to Complete
 
+#### Setup short URL for frontend app
+- [x] Configure custom domain for the frontend Azure Container App to use a short URL with Azure-managed certificate and Azure DNS.
+  - [x] Modify `container_apps` module to use `azurerm_container_app_custom_domain` resource.
+  - [x] Update module variables to accept `frontend_custom_hostname`, `dns_zone_name`, and `dns_zone_resource_group_name`.
+  - [x] Implement `azurerm_dns_txt_record` in the module for automatic domain validation.
+  - [x] Implement `azurerm_dns_cname_record` in the module to point the custom hostname to the app (for subdomains).
+  - [x] Terraform now fully automates this process if `frontend_custom_hostname` and Azure DNS details are provided.
+
 #### Secrets and Environment Management
 - [ ] Configure environment variables securely
   - [ ] Setup Azure Key Vault for secrets management

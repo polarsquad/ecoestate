@@ -64,6 +64,21 @@ This project uses Azure AD/Entra ID for state storage authentication instead of 
 
 **Important**: Before initializing Terraform, ensure your Azure identity (user or service principal) has the **"Storage Blob Data Owner"** role assigned on the storage account (not just at the container level). This role assignment must be made at the storage account resource level.
 
+### Terraform Provider Authentication
+
+When running Terraform commands (`plan`, `apply`, `destroy`), the AzureRM provider needs to authenticate to your Azure subscription. As of AzureRM provider version 3.x and later, explicit configuration for the subscription and tenant ID is recommended if not using other authentication methods like Managed Identity or a Service Principal with environment variables.
+
+This project's root Terraform configuration (`tf/main.tf`) requires you to provide your Azure Subscription ID and Tenant ID via input variables:
+
+- `azure_subscription_id`: Your Azure Subscription ID.
+- `azure_tenant_id`: Your Azure Tenant ID.
+
+You can obtain your Subscription ID and Tenant ID using the Azure CLI:
+- Subscription ID: `az account show --query id -o tsv`
+- Tenant ID: `az account show --query tenantId -o tsv`
+
+Make sure you are logged into the correct Azure account (`az login`) and have selected the appropriate subscription (`az account set --subscription "your-subscription-name-or-id"`) before running Terraform commands. This provider authentication is separate from the backend state authentication but often relies on the same Azure CLI login session.
+
 ## Deployment Instructions
 
 1. **Login to Azure**

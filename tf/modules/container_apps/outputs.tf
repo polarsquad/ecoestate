@@ -18,6 +18,11 @@ output "frontend_url" {
   value       = "https://${azurerm_container_app.frontend.ingress[0].fqdn}"
 }
 
+output "frontend_fqdn" {
+  description = "The FQDN of the frontend Container App's ingress"
+  value       = azurerm_container_app.frontend.ingress[0].fqdn
+}
+
 output "backend_id" {
   description = "The ID of the backend Container App"
   value       = azurerm_container_app.backend.id
@@ -36,4 +41,9 @@ output "container_apps_identity_id" {
 output "log_analytics_workspace_id" {
   description = "The ID of the Log Analytics workspace"
   value       = azurerm_log_analytics_workspace.logs.id
+}
+
+output "frontend_custom_domain_verification_id" {
+  description = "The ID used by Azure for TXT record validation for the frontend custom domain. This is automatically used by the module to create the TXT record in Azure DNS if configured."
+  value       = var.frontend_custom_hostname != null ? azurerm_container_app.frontend.custom_domain_verification_id : null
 }
