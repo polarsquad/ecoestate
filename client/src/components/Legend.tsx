@@ -2,6 +2,7 @@ import React from 'react';
 import { useMap } from 'react-leaflet';
 import L from 'leaflet';
 import './Legend.css';
+import { escapeHTML } from '../utils/stringUtils';
 
 interface LegendProps {
     title?: string;
@@ -9,6 +10,7 @@ interface LegendProps {
 
 const Legend: React.FC<LegendProps> = ({ title = 'Property Prices (€/m²)' }) => {
     const map = useMap();
+    const safeTitle = escapeHTML(title);
 
     React.useEffect(() => {
         // Create a Leaflet control for the legend
@@ -18,9 +20,9 @@ const Legend: React.FC<LegendProps> = ({ title = 'Property Prices (€/m²)' }) 
             const div = L.DomUtil.create('div', 'info legend');
 
             // Different legend content based on the title (determines if it's price or trend)
-            if (title.includes('Price Trend')) {
+            if (safeTitle.includes('Price Trend')) {
                 div.innerHTML = `
-                <div class="legend-title">${title}</div>
+                <div class="legend-title">${safeTitle}</div>
                 <div class="legend-item"><i style="background:#d73027"></i> ≤ -15%</div>
                 <div class="legend-item"><i style="background:#fc8d59"></i> -15% to -5%</div>
                 <div class="legend-item"><i style="background:#fee08b"></i> -5% to 0%</div>
@@ -31,7 +33,7 @@ const Legend: React.FC<LegendProps> = ({ title = 'Property Prices (€/m²)' }) 
                 `;
             } else {
                 div.innerHTML = `
-                <div class="legend-title">${title}</div>
+                <div class="legend-title">${safeTitle}</div>
                 <div class="legend-item"><i style="background:#1a9850"></i> < 2000</div>
                 <div class="legend-item"><i style="background:#91cf60"></i> 2000 - 3000</div>
                 <div class="legend-item"><i style="background:#d9ef8b"></i> 3000 - 4000</div>
@@ -52,7 +54,7 @@ const Legend: React.FC<LegendProps> = ({ title = 'Property Prices (€/m²)' }) 
         return () => {
             legend.remove();
         };
-    }, [map, title]);
+    }, [map, safeTitle]);
 
     return null; // The component doesn't render anything directly
 };

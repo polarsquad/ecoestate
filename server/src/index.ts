@@ -9,9 +9,47 @@ import { initializeScheduledTasks } from './scheduledTasks'; // Import the sched
 const app = express();
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
 
-// Enable CORS for all routes
+// Configure CORS
+const allowedOrigins: string[] = [];
+if (process.env.NODE_ENV === 'development') {
+    allowedOrigins.push('http://localhost:5173'); // Vite dev server
+    const prodOriginForDev = process.env.FRONTEND_ORIGIN_PROD;
+    if (prodOriginForDev) {
+        allowedOrigins.push(prodOriginForDev); // Allow testing dev backend with a deployed/prod-like frontend URL
+    }
+} else { // Handles 'production' or any other non-development NODE_ENV
+    const prodOrigin = process.env.FRONTEND_ORIGIN_PROD;
+    if (prodOrigin) {
+        allowedOrigins.push(prodOrigin);
+    } else {
+        console.error(
+            'CORS Configuration Error: The FRONTEND_ORIGIN_PROD environment variable is NOT SET. ' +
+            'In a production environment, this will prevent the frontend from connecting to the backend. ' +
+            'Please set this variable to the full URL of your deployed frontend application (e.g., https://www.yourdomain.com).'
+        );
+        // If FRONTEND_ORIGIN_PROD is not set in production, allowedOrigins will be empty,
+        // effectively blocking all cross-origin requests unless the request has no origin.
+    }
+}
+
 app.use(cors({
-    origin: 'http://localhost:5173', // Frontend development server address
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.length === 0 && process.env.NODE_ENV !== 'development') {
+            // If in prod-like env and no origins are configured (due to missing FRONTEND_ORIGIN_PROD)
+            console.error(`CORS Error: Origin '${origin}' was blocked because no FRONTEND_ORIGIN_PROD is configured.`);
+            return callback(new Error('Not allowed by CORS due to server misconfiguration.'));
+        }
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        } else {
+            console.warn(`CORS Warning: Origin '${origin}' was blocked by CORS policy. Allowed origins: ${allowedOrigins.join(', ')}`);
+            return callback(new Error('Not allowed by CORS.'));
+        }
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
