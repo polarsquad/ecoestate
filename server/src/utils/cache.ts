@@ -1,5 +1,6 @@
-import { PostalCodeData } from '../types/statfi.types';
-import { OverpassElement } from '../types/overpass.types';
+/**
+ * Generic simple in-memory cache with TTL.
+ */
 
 // Define potential value types for different caches
 // Remove specific types and allow any type for more flexibility

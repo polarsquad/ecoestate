@@ -69,7 +69,7 @@ app.use('/api/walking-distance', hsyWmsRouter); // Mount the HSY WMS router
 app.use('/api/postcodes', postcodeRoutes); // Mount the postcode router
 
 // Global error handler (optional basic example)
-app.use((err: any, req: Request, res: Response, next: express.NextFunction) => {
+app.use((err: any, req: Request, res: Response) => {
     console.error("Unhandled error:", err.stack);
     res.status(500).send('Something broke!');
 });

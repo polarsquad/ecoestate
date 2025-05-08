@@ -3,7 +3,7 @@ import {
     JsonStatResponse,
     PostalCodeData,
     BuildingPrices,
-    PriceTrendData
+    PriceTrend
 } from '../types/statfi.types'; // Import types
 import { SimpleCache } from '../utils/cache'; // Import the generic cache
 
@@ -175,97 +175,104 @@ export function clearStatFiCache() {
     // Log message handled by SimpleCache
 }
 
+// --------- Price Trend Calculation ---------
+
 /**
- * Calculates price trends based on yearly data.
- * @param yearlyData An array of PostalCodeData arrays, one for each year in the period.
- * @param startYear The first year of the period.
- * @param endYear The last year of the period.
- * @returns An array of objects containing postal code info and calculated trends.
+ * Helper function to safely get a numeric price for a specific building type.
  */
-export function calculatePriceTrends(yearlyData: PostalCodeData[][], startYear: number, endYear: number): PriceTrendData[] {
-    const postalCodeMap = new Map<string, PriceTrendData>();
-
-    // First, gather all postal codes across all years and initialize map entries
-    for (const yearData of yearlyData) {
-        for (const item of yearData) {
-            if (!postalCodeMap.has(item.postalCode)) {
-                postalCodeMap.set(item.postalCode, {
-                    postalCode: item.postalCode,
-                    district: item.district,
-                    municipality: item.municipality,
-                    fullLabel: item.fullLabel,
-                    trends: {}
-                });
-            }
-        }
+const getNumericPrice = (data: PostalCodeData, buildingType: string): number | null => {
+    const price = data.prices[buildingType];
+    if (price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0) {
+        return Number(price);
     }
+    return null;
+};
 
-    // Building types to analyze
-    const buildingTypes = [
-        "Kerrostalo yksiöt",
-        "Kerrostalo kaksiot",
-        "Kerrostalo kolmiot+",
-        "Rivitalot yhteensä"
-    ];
+/**
+ * Calculates aggregate trend metrics for a single postal code across years.
+ */
+const calculateAggregateMetrics = (
+    yearlyDataForPostalCode: (PostalCodeData | undefined)[]
+): PriceTrend['trends'] => {
+    const trends: PriceTrend['trends'] = {};
+    const buildingTypes = ["Kerrostalo yksiöt", "Kerrostalo kaksiot", "Kerrostalo kolmiot+", "Rivitalot yhteensä"];
+    const periodLength = yearlyDataForPostalCode.length;
+    if (periodLength < 2) return trends; // Need at least 2 years for a trend
 
-    // For each postal code, calculate trend for each building type
-    postalCodeMap.forEach((postalCodeTrendData) => {
-        for (const buildingType of buildingTypes) {
-            const yearlyPrices: (number | null)[] = [];
+    buildingTypes.forEach(type => {
+        const startData = yearlyDataForPostalCode[0];
+        const endData = yearlyDataForPostalCode[periodLength - 1];
 
-            // Extract prices for this building type across the years
-            for (let i = 0; i < yearlyData.length; i++) {
-                const yearData = yearlyData[i];
-                const postalCodeYearData = yearData.find(item => item.postalCode === postalCodeTrendData.postalCode);
-                const price = postalCodeYearData?.prices[buildingType];
+        const startPrice = startData ? getNumericPrice(startData, type) : null;
+        const endPrice = endData ? getNumericPrice(endData, type) : null;
 
-                if (price && price !== 'N/A' && !isNaN(Number(price))) {
-                    yearlyPrices.push(Number(price));
-                } else {
-                    yearlyPrices.push(null);
-                }
-            }
+        if (startPrice !== null && endPrice !== null && startPrice > 0) {
+            const percentChange = ((endPrice - startPrice) / startPrice) * 100;
+            const direction = percentChange > 1 ? 'up' : percentChange < -1 ? 'down' : 'stable';
+            const averageYearlyChange = (endPrice - startPrice) / (periodLength - 1);
 
-            // Calculate trend if we have at least two valid prices
-            const validPrices = yearlyPrices.filter(p => p !== null) as number[];
-            const firstValidPriceIndex = yearlyPrices.findIndex(p => p !== null);
-
-            // Replace findLastIndex with a loop for broader compatibility
-            let lastValidPriceIndex = -1;
-            for (let i = yearlyPrices.length - 1; i >= 0; i--) {
-                if (yearlyPrices[i] !== null) {
-                    lastValidPriceIndex = i;
-                    break;
-                }
-            }
-
-            if (validPrices.length >= 2 && lastValidPriceIndex > firstValidPriceIndex) {
-                const startPrice = yearlyPrices[firstValidPriceIndex];
-                const endPrice = yearlyPrices[lastValidPriceIndex];
-                const duration = Math.max(1, lastValidPriceIndex - firstValidPriceIndex); // Years between first/last data points
-
-                // Ensure start and end prices are valid and startPrice is not zero
-                if (startPrice !== null && startPrice !== 0 && endPrice !== null) {
-                    const percentChange = ((endPrice - startPrice) / startPrice) * 100;
-                    const direction = percentChange > 1 ? 'up' : percentChange < -1 ? 'down' : 'stable';
-                    const yearlyChange = percentChange / duration;
-
-                    postalCodeTrendData.trends[buildingType] = {
-                        percentChange: parseFloat(percentChange.toFixed(2)),
-                        direction,
-                        startPrice,
-                        endPrice,
-                        averageYearlyChange: parseFloat(yearlyChange.toFixed(2))
-                    };
-                } else {
-                    postalCodeTrendData.trends[buildingType] = null; // Handle cases with insufficient spread or zero start price
-                }
-            } else {
-                postalCodeTrendData.trends[buildingType] = null; // Not enough data points
-            }
+            trends[type] = {
+                percentChange,
+                direction,
+                startPrice,
+                endPrice,
+                averageYearlyChange,
+            };
+        } else {
+            trends[type] = null; // Not enough data for this type
         }
     });
 
-    // Convert map to array for response
-    return Array.from(postalCodeMap.values());
-} 
+    return trends;
+};
+
+/**
+ * Calculates price trends over a period for all postal codes.
+ */
+export function calculatePriceTrends(
+    yearlyData: PostalCodeData[][],
+    startYear: number,
+    endYear: number
+): PriceTrend[] {
+    const trendsByPostalCode: { [postalCode: string]: (PostalCodeData | undefined)[] } = {};
+    const allPostalCodes = new Set<string>();
+
+    // Organize data by postal code
+    yearlyData.forEach(yearDataSet => {
+        yearDataSet.forEach(postalData => {
+            allPostalCodes.add(postalData.postalCode);
+            if (!trendsByPostalCode[postalData.postalCode]) {
+                trendsByPostalCode[postalData.postalCode] = new Array(yearlyData.length).fill(undefined);
+            }
+        });
+    });
+
+    // Fill the trendsByPostalCode structure
+    yearlyData.forEach((yearDataSet, yearIndex) => {
+        yearDataSet.forEach(postalData => {
+            trendsByPostalCode[postalData.postalCode][yearIndex] = postalData;
+        });
+    });
+
+    // Calculate trends for each postal code
+    const finalTrends: PriceTrend[] = [];
+    allPostalCodes.forEach(postalCode => {
+        const postalCodeYearlyData = trendsByPostalCode[postalCode];
+        const trends = calculateAggregateMetrics(postalCodeYearlyData);
+
+        // Find the first valid entry to get district/municipality/label
+        const representativeData = postalCodeYearlyData.find(d => d !== undefined);
+
+        if (representativeData && Object.values(trends).some(t => t !== null)) {
+            finalTrends.push({
+                postalCode: postalCode,
+                district: representativeData.district,
+                municipality: representativeData.municipality,
+                fullLabel: representativeData.fullLabel,
+                trends: trends
+            });
+        }
+    });
+
+    return finalTrends;
+}

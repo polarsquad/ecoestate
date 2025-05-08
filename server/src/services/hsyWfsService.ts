@@ -59,7 +59,6 @@ export async function getPostcodeBoundaries(): Promise<GeoJSONFeatureCollection 
     } catch (error: any) {
         if (axios.isAxiosError(error)) {
             console.error(`Error fetching postcode boundaries: API request failed with status ${error.response?.status} ${error.response?.statusText}`, error.message);
-            // console.error('HSY WFS Error Response Data:', error.response?.data); // Avoid logging potentially large data
         } else {
             console.error(`Error fetching postcode boundaries: An unexpected error occurred`, error);
         }
