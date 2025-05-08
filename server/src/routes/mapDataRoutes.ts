@@ -9,16 +9,6 @@ const router: Router = express.Router();
  * @returns {Object} GeoJSON FeatureCollection representing green spaces.
  */
 router.get('/green-spaces', async (req: Request, res: Response) => {
-    // Remove bbox validation - no longer needed
-    /*
-    const bbox = req.query.bbox as string;
-    // Validate bbox format (simple check: south,west,north,east)
-    if (!bbox || !/^-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(bbox)) {
-        res.status(400).json({ error: 'Invalid or missing bbox query parameter. Format: south,west,north,east' });
-        return;
-    }
-    */
-
     try {
         // Call service without bbox
         const greenSpaceGeoJson = await fetchGreenSpaces();
@@ -26,13 +16,25 @@ router.get('/green-spaces', async (req: Request, res: Response) => {
         // Return the GeoJSON FeatureCollection directly
         res.json(greenSpaceGeoJson); // Send the GeoJSON data
 
-    } catch (error: any) {
+    } catch (error) {
         // The service function now handles logging and returns empty GeoJSON on error,
         // but we still need to catch potential unexpected errors here.
-        console.error('Unexpected error in /green-spaces route:', error.message);
+        const userMessage = 'Internal server error while processing green space data.';
+        let logMessage = 'Unexpected error in /green-spaces route:';
+        let errorDetails: string | unknown = error; // Type more specifically
+
+        if (error instanceof Error) {
+            logMessage = `Unexpected error in /green-spaces route: ${error.message}`;
+            errorDetails = error.message;
+        } else {
+            // errorDetails remains the original error object for logging if not an Error instance
+        }
+        console.error(logMessage, error instanceof Error ? '' : error);
+
         res.status(500).json({
-            error: 'Internal server error while processing green space data.',
-            message: error.message
+            error: userMessage,
+            // Ensure message is a string for the response
+            message: typeof errorDetails === 'string' ? errorDetails : 'Details of the error could not be determined or are not a string.'
         });
     }
 });

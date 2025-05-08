@@ -1,6 +1,6 @@
 import axios from 'axios';
 import osmtogeojson from 'osmtogeojson';
-import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
+import { FeatureCollection } from 'geojson';
 import { SimpleCache } from '../utils/cache';
 import {
     OverpassResponse

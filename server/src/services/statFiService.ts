@@ -231,8 +231,8 @@ const calculateAggregateMetrics = (
  */
 export function calculatePriceTrends(
     yearlyData: PostalCodeData[][],
-    startYear: number,
-    endYear: number
+    _startYear: number,
+    _endYear: number
 ): PriceTrend[] {
     const trendsByPostalCode: { [postalCode: string]: (PostalCodeData | undefined)[] } = {};
     const allPostalCodes = new Set<string>();

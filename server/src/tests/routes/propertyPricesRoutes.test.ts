@@ -101,11 +101,12 @@ describe('Property Prices and Trends Routes', () => {
         });
 
         it('should return 500 if fetchStatFiPropertyData throws an error', async () => {
-            mockedStatFiService.fetchStatFiPropertyData.mockRejectedValue(new Error('StatFin API unavailable'));
+            const mockError = new Error('StatFin API unavailable');
+            mockedStatFiService.fetchStatFiPropertyData.mockRejectedValue(mockError);
             const endYear = 2022;
             const response = await request(app).get(`/api/property-prices/trends?endYear=${endYear}`);
             expect(response.status).toBe(500);
-            expect(response.body.error).toContain('Internal server error');
+            expect(response.body.error).toEqual(mockError.message);
             expect(mockedStatFiService.calculatePriceTrends).not.toHaveBeenCalled();
         });
 
@@ -179,10 +180,11 @@ describe('Property Prices and Trends Routes', () => {
 
         it('should return 500 if fetchStatFiPropertyData throws an error', async () => {
             const mockYear = '2021';
-            mockedStatFiService.fetchStatFiPropertyData.mockRejectedValue(new Error('API Error'));
+            const mockError = new Error('API Error');
+            mockedStatFiService.fetchStatFiPropertyData.mockRejectedValue(mockError);
             const response = await request(app).get(`/api/property-prices?year=${mockYear}`);
             expect(response.status).toBe(500);
-            expect(response.body.error).toContain('Internal server error while retrieving property prices');
+            expect(response.body.error).toEqual(mockError.message);
             expect(mockedStatFiService.fetchStatFiPropertyData).toHaveBeenCalledWith(mockYear);
         });
     });

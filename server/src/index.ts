@@ -7,6 +7,7 @@ import propertyPricesAndTrendsRouter from './routes/propertyPricesRoutes'; // Re
 import { initializeScheduledTasks } from './scheduledTasks'; // Import the scheduler initializer
 
 const app = express();
+app.disable('x-powered-by'); // Disable X-Powered-By header
 const port = process.env.PORT || 3001; // Use environment variable or default to 3001
 
 // Configure CORS
@@ -69,7 +70,7 @@ app.use('/api/walking-distance', hsyWmsRouter); // Mount the HSY WMS router
 app.use('/api/postcodes', postcodeRoutes); // Mount the postcode router
 
 // Global error handler (optional basic example)
-app.use((err: any, req: Request, res: Response) => {
+app.use((err: Error, req: Request, res: Response) => {
     console.error("Unhandled error:", err.stack);
     res.status(500).send('Something broke!');
 });
