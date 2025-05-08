@@ -1,6 +1,29 @@
 import axios from 'axios';
 import { DigitransitStopsQueryResult } from '../types/digitransit.types'; // Import types
 
+// --- Added Type Definitions for Error Handling ---
+interface DigitransitErrorDetail {
+    message: string;
+    // Add other fields if known/needed
+}
+
+interface DigitransitErrorResponse {
+    errors: DigitransitErrorDetail[];
+}
+
+// Type guard function to check for the specific error structure
+function isDigitransitErrorResponse(data: unknown): data is DigitransitErrorResponse {
+    if (!data || typeof data !== 'object') return false;
+    // Check if 'errors' property exists and is an array
+    if (!('errors' in data) || !Array.isArray((data as { errors: unknown }).errors)) return false;
+    // Check if every element in the 'errors' array has the required structure
+    return (data as { errors: unknown[] }).errors.every(
+        (err: unknown): err is DigitransitErrorDetail =>
+            typeof err === 'object' && err !== null && 'message' in err && typeof (err as { message: unknown }).message === 'string'
+    );
+}
+// --- End of Added Types ---
+
 // Base URL for the Digitransit Routing API (GraphQL endpoint)
 // Using HSL (Helsinki Region) router as an example
 const DIGITRANSIT_API_URL = 'https://api.digitransit.fi/routing/v1/routers/hsl/index/graphql';
@@ -27,33 +50,26 @@ query GetStops {
 }
 `;
 
-/**
- * Handles API errors and extracts meaningful messages
- */
-function handleApiError(error: any, context: string): void {
-    console.error(`\n--- ${context} ---`);
-    if (axios.isAxiosError(error)) {
-        console.error('Status:', error.response?.status);
-        console.error('Status Text:', error.response?.statusText);
-
-        if (error.response?.data) {
-            // GraphQL errors might be nested in response.data.errors
-            if (error.response.data.errors) {
-                console.error('GraphQL Errors:', JSON.stringify(error.response.data.errors, null, 2));
-            } else if (typeof error.response.data === 'string') {
-                console.error('API Error Data:', error.response.data);
-            } else {
-                console.error('API Error Data:', JSON.stringify(error.response.data, null, 2));
-            }
-        } else {
-            console.error('Error Message:', error.message);
+// --- Added Type for Successful Response ---
+interface DigitransitStop {
+    gtfsId: string;
+    name: string;
+    lat: number;
+    lon: number;
+    patterns: {
+        code: string;
+        route: {
+            shortName: string;
         }
-    } else {
-        console.error('Error:', error);
-    }
-    console.error(`--- End of Error ---\n`);
+    }[];
 }
 
+interface DigitransitSuccessResponse {
+    data: {
+        stops: DigitransitStop[];
+    };
+}
+// --- End of Added Types ---
 
 /**
  * Executes a GraphQL query against the Digitransit API
@@ -104,8 +120,26 @@ The Digitransit API requires a subscription key for access.
         }
 
     } catch (error) {
-        handleApiError(error, 'Error querying Digitransit API');
-        return null;
+        console.error('\n--- Error fetching data from Digitransit API ---');
+        if (axios.isAxiosError(error)) {
+            console.error('Status:', error.response?.status);
+            console.error('API Error Message:', error.message);
+
+            // Use the type guard
+            const responseData = error.response?.data;
+            if (isDigitransitErrorResponse(responseData)) {
+                // TypeScript now knows responseData has the shape DigitransitErrorResponse
+                console.error('API Errors:', responseData.errors.map(e => e.message).join(', '));
+            } else {
+                console.error('API Response Data (Raw or Unexpected Structure):', responseData);
+            }
+        } else if (error instanceof Error) {
+            console.error('Error:', error.message);
+        } else {
+            console.error('Unknown error structure:', error);
+        }
+        console.error('--- End of Error ---');
+        return null; // Return null on error
     }
 }
 

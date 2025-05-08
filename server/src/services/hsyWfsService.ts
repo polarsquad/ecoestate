@@ -56,11 +56,15 @@ export async function getPostcodeBoundaries(): Promise<GeoJSONFeatureCollection 
             console.error(`Error fetching postcode boundaries: Received status ${response.status} but data is invalid or not a FeatureCollection.`);
             return null;
         }
-    } catch (error: any) {
-        if (axios.isAxiosError(error)) {
-            console.error(`Error fetching postcode boundaries: API request failed with status ${error.response?.status} ${error.response?.statusText}`, error.message);
+    } catch (error) {
+        if (error instanceof Error) {
+            if (axios.isAxiosError(error)) {
+                console.error(`Error fetching postcode boundaries: API request failed with status ${error.response?.status} ${error.response?.statusText}`, error.message);
+            } else {
+                console.error(`Error fetching postcode boundaries: An unexpected error occurred`, error.message);
+            }
         } else {
-            console.error(`Error fetching postcode boundaries: An unexpected error occurred`, error);
+            console.error(`Error fetching postcode boundaries: An unknown error occurred`, error);
         }
         return null;
     }
