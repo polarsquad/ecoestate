@@ -45,6 +45,7 @@ Based on the implementation plan, the project is currently in the following stat
     - Addressed XSS vulnerabilities in frontend tooltips and dynamic HTML rendering.
     - Implemented dynamic CORS policy for backend, configurable for production via environment variables and automatically set via Terraform.
     - Added Content Security Policy (CSP) for both development (meta tag) and production (Nginx header).
+    - Added `X-Content-Type-Options: nosniff` header via Nginx.
   - 🔄 Planning CI/CD pipeline.
 
 - **Phase 5 (Refinement & Documentation)**: ⬜ NOT STARTED
@@ -78,6 +79,11 @@ Based on the implementation plan, the project is currently in the following stat
 - ✅ **Content Security Policy (CSP) Implementation**:
     - Added development CSP via `<meta http-equiv="Content-Security-Policy">` in `client/index.html`.
     - Added production CSP via HTTP header in `client/nginx.conf`.
+- ✅ **Security Headers Implementation**:
+    - **Content Security Policy (CSP)**:
+        - Development CSP added via `<meta http-equiv="Content-Security-Policy">` in `client/index.html`.
+        - Production CSP added via HTTP header in `client/nginx.conf`.
+    - **X-Content-Type-Options**: `nosniff` header added via Nginx configuration (`client/nginx.conf`).
 
 ## Next Steps
 
@@ -114,6 +120,7 @@ With the core infrastructure defined, application connectivity verified in Azure
 - **Security - XSS Prevention**: Utilize HTML escaping for dynamic content rendered outside of React's default JSX escaping, especially with third-party libraries that use `innerHTML` or construct HTML strings.
 - **Security - CORS Policy**: Backend employs a dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set by Terraform in Azure), allowing specific origins rather than wildcards.
 - **Security - Content Security Policy (CSP)**: Dual CSP setup: `<meta>` tag for more permissive development policy (Vite HMR), and stricter HTTP header from Nginx for production.
+- **Security - X-Content-Type-Options**: `nosniff` header added via Nginx to prevent MIME sniffing.
 
 ## Current Challenges
 
@@ -122,6 +129,8 @@ With the core infrastructure defined, application connectivity verified in Azure
 - Designing effective CI/CD pipeline for reliable deployments and promotions.
 - Planning for efficient implementation of correlation analysis features.
 - **Verifying robustness and compatibility of the implemented Content Security Policy across all features and browsers.**
+- **Content Security Policy (CSP) & Other Headers**: Requires different approaches for development (Vite's needs) and production (server-sent headers). Understanding directive interactions (e.g., `default-src` as fallback) and library-specific needs (e.g., Leaflet potentially using inline styles) is important. Ensuring headers like `X-Content-Type-Options` don't conflict with necessary functionality (assuming correct MIME types are served).
+- **HTML Sanitization**: Essential when embedding dynamic data into HTML strings used by third-party libraries or `innerHTML`, even if the data originates from trusted API sources, as a defense-in-depth measure.
 
 ## User Feedback Insights
 

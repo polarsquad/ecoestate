@@ -73,13 +73,14 @@
   - Uses `client/nginx.conf` template and `client/entrypoint.sh` with `envsubst` to set backend URL via `BACKEND_URL` env var.
   - Proxies over HTTPS to backend's internal ACA FQDN on port 443.
   - Serves Content Security Policy (CSP) HTTP header via Nginx configuration.
+  - Serves `X-Content-Type-Options` header via Nginx configuration.
 - **Backend**: Runs compiled Node.js app (`dist/index.js`).
   - `FRONTEND_ORIGIN_PROD` environment variable configured by Terraform for CORS policy.
 
 ### Project Structure
 - `/client` - Frontend React application
   - `Dockerfile` - Multi-stage, includes Nginx for production
-  - `nginx.conf` - Nginx config template for proxying and CSP header
+  - `nginx.conf` - Nginx config template for proxying and security headers (CSP, X-Content-Type-Options)
   - `entrypoint.sh` - Processes Nginx template
   - `vite.config.ts` - Vite config (proxy used in dev only)
   - `/src/utils/stringUtils.ts` - Client-side string utility functions (e.g., `escapeHTML`).
@@ -121,6 +122,7 @@
 - **Cross-Origin Resource Sharing (CORS)**: Backend policy dynamically configured to allow specific frontend origins (development and production based on environment variables set by Terraform).
 - **Cross-Site Scripting (XSS) Prevention**: HTML escaping applied to dynamic content rendered outside React's default JSX escaping, particularly for third-party library integrations like Leaflet tooltips and legends.
 - **Content Security Policy (CSP)**: Implemented with different policies for development (via meta tag, more permissive for Vite HMR/dev server) and production (via Nginx HTTP header, stricter).
+- **X-Content-Type-Options**: Set to `nosniff` via Nginx header in production to prevent browsers from MIME-sniffing responses away from the declared content-type.
 
 ### Accessibility Standards
 - WCAG 2.1 AA compliance for web interface

@@ -66,7 +66,7 @@ EcoEstate follows a classic three-tier architecture:
    - **Dependency Management**: Standard npm practices, named volumes in Compose.
    - **Live Reloading**: Via volume mounts in Compose.
    - **Dev Server Configuration**: Vite dev server configured for external connections and API proxying (via env var).
-   - **Production Frontend Serving**: Nginx serves static files, proxies `/api` requests, and adds CSP HTTP header.
+   - **Production Frontend Serving**: Nginx serves static files, proxies `/api` requests, and adds security headers (CSP, X-Content-Type-Options).
    - **Container Communication**: Docker Compose uses service names; ACA uses internal DNS.
    - **Environment Isolation**: Via Docker Compose env vars and Terraform variables/workspaces.
    - **Backend Environment**: Includes `PORT` and `FRONTEND_ORIGIN_PROD` (for CORS) environment variables, set by Terraform in ACA.
@@ -83,8 +83,8 @@ EcoEstate follows a classic three-tier architecture:
    - **Location**: Nginx running inside the frontend container app.
    - **Purpose**: Route incoming browser requests for `/api/*` to the internal backend container app. Serve static content and security headers.
    - **Mechanism**: `proxy_pass` directive in `nginx.conf` uses an environment variable (`BACKEND_URL`) containing the backend's internal ACA FQDN. Uses HTTPS on port 443.
-   - **Configuration**: Nginx config template (`nginx.conf`) is processed by an `entrypoint.sh` script using `envsubst` to inject the backend URL at container startup. Also includes `add_header Content-Security-Policy ...`.
-   - **Security**: Proxies to the backend's internal HTTPS endpoint; Terraform ensures backend only allows HTTPS ingress. Serves production CSP header.
+   - **Configuration**: Nginx config template (`nginx.conf`) is processed by an `entrypoint.sh` script using `envsubst` to inject the backend URL at container startup. Also includes `add_header Content-Security-Policy ...;` and `add_header X-Content-Type-Options ...;`.
+   - **Security**: Proxies to the backend's internal HTTPS endpoint; Terraform ensures backend only allows HTTPS ingress. Serves production security headers (CSP, X-Content-Type-Options).
 
 8. **Custom Domain and Certificate Management (ACA) (Implemented & In Progress)**
    - **Goal**: Assign a user-friendly custom domain to the frontend Azure Container App.
@@ -126,6 +126,10 @@ EcoEstate follows a classic three-tier architecture:
         - **Permissiveness**: Stricter (e.g., `script-src 'self'`, no `unsafe-eval`). `style-src 'unsafe-inline'` retained for potential Leaflet compatibility.
     - **Directives Include**: `default-src`, `script-src`, `style-src`, `img-src` (allowing OpenStreetMap tiles), `font-src`, `connect-src`, `worker-src`, `object-src 'none'`, `base-uri 'self'`, `form-action 'self'`, `frame-ancestors 'none'`.
     - **Goal**: Mitigate XSS and other injection attacks by restricting the sources from which resources can be loaded and executed.
+
+12. **MIME Sniffing Prevention Pattern (Implemented)**
+    - **Mechanism**: `X-Content-Type-Options: nosniff` HTTP header set by Nginx in `client/nginx.conf`.
+    - **Goal**: Prevent browsers from interpreting files as a different MIME type than what is specified by the `Content-Type` header, mitigating attacks related to content-type confusion.
 
 ## Critical Implementation Paths
 
