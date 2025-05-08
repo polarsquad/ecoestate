@@ -53,7 +53,7 @@ type GreenSpaceProperties = GeoJsonProperties & {
 
 const CURRENT_YEAR = new Date().getFullYear();
 const START_YEAR = 2010;
-const DEFAULT_YEAR = 2023;
+const DEFAULT_YEAR = 2024;
 
 const GREEN_SPACE_PANE = 'greenSpacePane';
 
