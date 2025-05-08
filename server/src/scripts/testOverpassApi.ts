@@ -1,6 +1,7 @@
 import axios from 'axios';
 import querystring from 'querystring';
 import { OverpassResponse, OverpassElement } from '../types/overpass.types'; // Import types - Added .js extension
+import osmtogeojson from 'osmtogeojson';
 
 // Public Overpass API endpoint
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -25,21 +26,6 @@ const overpassQuery = `
 );
 out center;
 `;
-
-/**
- * Handles API errors and extracts meaningful messages
- */
-function handleApiError(error: any, context: string): void {
-    console.error(`\n--- ${context} ---`);
-    if (axios.isAxiosError(error)) {
-        console.error('Status:', error.response?.status);
-        console.error('Status Text:', error.response?.statusText);
-        console.error('Data:', JSON.stringify(error.response?.data, null, 2));
-    } else {
-        console.error('Error:', error.message);
-    }
-    console.error(`--- End of Error ---\n`);
-}
 
 /**
  * Executes an Overpass QL query
@@ -67,7 +53,13 @@ async function queryOverpassApi(query: string): Promise<OverpassResponse | null>
             return null;
         }
     } catch (error) {
-        handleApiError(error, 'Error querying Overpass API');
+        console.error("\n--- Error testing Overpass fetch ---");
+        if (error instanceof Error) {
+            console.error('Error:', error.message);
+        } else {
+            console.error("Unknown error structure:", error);
+        }
+        console.error("--- End of Error ---");
         return null;
     }
 }
@@ -109,4 +101,51 @@ async function main() {
 main().catch(error => {
     console.error("Unexpected error in main function:", error);
     process.exit(1);
-}); 
+});
+
+/**
+ * Function to fetch data from Overpass API and convert to GeoJSON
+ */
+async function testOverpassFetch(): Promise<void> {
+    const sampleQuery = `
+        [out:json][timeout:25];
+        (
+          node["amenity"="cafe"](60.16,24.93,60.18,24.96);
+        );
+        out body;
+        >;
+        out skel qt;
+    `;
+
+    try {
+        console.log('Testing Overpass API fetch with sample query...');
+        const response = await axios.post<OverpassResponse>(
+            OVERPASS_API_URL,
+            sampleQuery,
+            { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+        );
+
+        if (response.data && response.data.elements) {
+            const geojsonData = osmtogeojson(response.data);
+            console.log(`Successfully fetched and converted ${geojsonData.features.length} features (cafes in central Helsinki).`);
+        } else {
+            console.log('Received empty or invalid data from Overpass API.');
+            console.log('Response Data:', response.data);
+        }
+
+    } catch (error) {
+        console.error("\n--- Error testing Overpass fetch ---");
+        if (axios.isAxiosError(error)) {
+            console.error('Status:', error.response?.status);
+            console.error('Status Text:', error.response?.statusText);
+            console.error('Data:', error.response?.data);
+        } else if (error instanceof Error) {
+            console.error('Error:', error.message);
+        } else {
+            console.error("Unknown error structure:", error);
+        }
+        console.error("--- End of Error ---");
+    }
+}
+
+void testOverpassFetch(); // Call the test function 

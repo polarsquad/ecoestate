@@ -75,13 +75,15 @@ async function queryWmsFeatureInfo(layerName: string, point: { x: number, y: num
             }
             return null;
         }
-    } catch (error: any) {
+    } catch (error) {
         console.error(`Error querying layer ${layerName}:`);
         if (axios.isAxiosError(error)) {
             console.error('Status:', error.response?.status);
             console.error('Data:', error.response?.data);
-        } else {
+        } else if (error instanceof Error) {
             console.error('Error:', error.message);
+        } else {
+            console.error('Unknown error structure:', error);
         }
         return null;
     }
@@ -118,6 +120,11 @@ async function main() {
 
 // Run the main function
 main().catch(error => {
-    console.error("Unexpected error in main function:", error);
+    console.error("Unexpected error in main function:");
+    if (error instanceof Error) {
+        console.error(error.message);
+    } else {
+        console.error('Unknown error structure:', error);
+    }
     process.exit(1);
 });

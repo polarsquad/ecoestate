@@ -137,7 +137,11 @@ describe('hsyWfsService', () => {
             expect(mockedAxiosGet).toHaveBeenCalledTimes(1);
             expect(mockCacheInstance.set).not.toHaveBeenCalled();
             expect(result).toBeNull();
-            expect(consoleErrorSpy).toHaveBeenCalledWith(expect.stringContaining('Error fetching postcode boundaries: An unexpected error occurred'), apiError);
+            // Check that console.error was called with the message derived from the error
+            expect(consoleErrorSpy).toHaveBeenCalledWith(
+                expect.stringContaining('Error fetching postcode boundaries: An unexpected error occurred'),
+                apiError.message // Expect the message string, not the full error object
+            );
 
             consoleErrorSpy.mockRestore();
         });

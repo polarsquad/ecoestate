@@ -41,7 +41,7 @@ const greenSpaceTags = [
 /**
  * Helper function to handle API errors consistently.
  */
-function handleApiError(error: any, context: string): void {
+function handleApiError(error: unknown, context: string): void {
     console.error(`\n--- Error in ${context} ---`);
     if (axios.isAxiosError(error)) {
         console.error('Status:', error.response?.status);
@@ -54,8 +54,10 @@ function handleApiError(error: any, context: string): void {
         } else {
             console.error('Axios Error Message:', error.message);
         }
-    } else {
+    } else if (error instanceof Error) {
         console.error('Non-Axios Error:', error.message);
+    } else {
+        console.error('Unknown error structure:', error);
     }
     console.error(`--- End of Error ---\n`);
 }
@@ -121,7 +123,7 @@ export async function fetchGreenSpaces(): Promise<FeatureCollection> {
         overpassCache.set(CACHE_KEY, geojsonData);
         return geojsonData;
 
-    } catch (error: any) {
+    } catch (error) {
         handleApiError(error, 'fetchGreenSpaces');
         // Return empty GeoJSON on error to prevent breaking the frontend
         // Do not cache errors

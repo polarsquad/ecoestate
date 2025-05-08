@@ -21,7 +21,7 @@ router.get('/green-spaces', async (req: Request, res: Response) => {
         // but we still need to catch potential unexpected errors here.
         const userMessage = 'Internal server error while processing green space data.';
         let logMessage = 'Unexpected error in /green-spaces route:';
-        let errorDetails: string | unknown = error; // Type more specifically
+        let errorDetails: unknown = error; // Changed string | unknown to unknown
 
         if (error instanceof Error) {
             logMessage = `Unexpected error in /green-spaces route: ${error.message}`;

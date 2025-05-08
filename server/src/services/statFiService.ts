@@ -151,19 +151,25 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
 
         return pricesByPostalCode;
 
-    } catch (error: any) {
+    } catch (error) {
         console.error(`Error fetching or processing StatFin data for year ${year}:`);
+        let errorMessage = `Failed to fetch property data for year ${year}.`;
         if (axios.isAxiosError(error)) {
+            // Keep logging Axios-specific details if available
             console.error('Axios Error:', error.message);
             if (error.response) {
                 console.error('Status:', error.response.status);
                 console.error('Data:', error.response.data);
             }
-        } else {
+            errorMessage = `StatFin API request failed: ${error.message}`; // More specific message
+        } else if (error instanceof Error) {
             console.error('Unexpected Error:', error.message);
+            errorMessage = error.message; // Use the specific error message
+        } else {
+            console.error('Unknown error structure:', error);
         }
-        // Re-throw the error to be handled by the caller (e.g., the route handler)
-        throw new Error(`Failed to fetch property data for year ${year}.`);
+        // Re-throw a new error with a potentially more specific message
+        throw new Error(errorMessage);
     }
 }
 
@@ -231,8 +237,10 @@ const calculateAggregateMetrics = (
  */
 export function calculatePriceTrends(
     yearlyData: PostalCodeData[][],
-    _startYear: number,
-    _endYear: number
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _startYear: number, // Prefixed with underscore
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _endYear: number    // Prefixed with underscore
 ): PriceTrend[] {
     const trendsByPostalCode: { [postalCode: string]: (PostalCodeData | undefined)[] } = {};
     const allPostalCodes = new Set<string>();

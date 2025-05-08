@@ -2,11 +2,11 @@
 
 export interface GeoJSONGeometry {
     type: string; // e.g., 'Polygon', 'MultiPolygon'
-    coordinates: any; // Structure depends on the type
+    coordinates: unknown; // Use unknown instead of any
 }
 
 export interface GeoJSONProperties {
-    [key: string]: any; // Allow any properties
+    [key: string]: unknown; // Use unknown instead of any
 }
 
 export interface GeoJSONFeature {

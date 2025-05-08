@@ -34,7 +34,7 @@ export interface OverpassElement {
     };
     geometry?: { // GeoJSON-like geometry
         type: string;
-        coordinates: any[];
+        coordinates: unknown[];
     }[];
 }
 
@@ -45,7 +45,7 @@ export interface OverpassMember {
     // Geometry information might be included depending on query
     geometry?: {
         type: string;
-        coordinates: any[];
+        coordinates: unknown[];
     }[];
 }
 

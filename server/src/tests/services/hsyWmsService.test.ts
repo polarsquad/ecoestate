@@ -84,15 +84,15 @@ describe('hsyWmsService', () => {
         });
 
         it('should handle API errors gracefully and return null', async () => {
-            // Suppress console.error for this specific test case
-            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
+            const apiError = new Error('Network failure');
+            mockedAxios.get.mockRejectedValueOnce(apiError);
 
-            const apiError = new Error('HSY WMS API error');
-            mockedAxios.get.mockRejectedValue(apiError);
+            // Suppress console.error output during this test
+            const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => { });
 
             const result = await getWalkingDistance(sampleCoords.x, sampleCoords.y);
             expect(result).toBeNull();
-            expect(mockedAxios.get).toHaveBeenCalledTimes(1);
+            expect(mockedAxios.get).toHaveBeenCalledTimes(3); // Expect 3 calls as it tries all layers
 
             // Restore console.error
             consoleErrorSpy.mockRestore();

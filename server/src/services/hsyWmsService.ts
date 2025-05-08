@@ -64,15 +64,19 @@ async function checkWmsLayer(layerName: string, x: number, y: number): Promise<b
 
         console.debug(`Layer ${layerName} check result: ${hasFeatures}`);
         return hasFeatures;
-    } catch (error: any) {
-        console.error(`Error querying HSY WMS layer ${layerName}:`, error.message);
-        // Optionally log more details based on error type (AxiosError vs other)
-        if (axios.isAxiosError(error)) {
-            console.error('HSY WMS Error Status:', error.response?.status);
-            // Avoid logging potentially large response data in production errors
-            // console.error('HSY WMS Error Data:', error.response?.data);
+    } catch (error) {
+        console.error(`Error checking HSY WMS layer ${layerName}:`);
+        if (error instanceof Error) {
+            if (axios.isAxiosError(error)) {
+                console.error(`API Error: Status ${error.response?.status}`, error.message);
+                // Optionally log error.response.data if needed, but be cautious of size
+            } else {
+                console.error(`Unexpected Error:`, error.message);
+            }
+        } else {
+            console.error(`Unknown error:`, error);
         }
-        throw error; // Re-throw the error to be handled by the caller
+        return false; // Indicate failure to check layer
     }
 }
 
@@ -108,8 +112,8 @@ export async function getWalkingDistance(x: number, y: number): Promise<HsyWmsVa
         } catch (error) {
             // Errors are handled within checkWmsLayer, but catch here just in case
             console.error(`Unexpected error during layer check for ${duration}:`, error);
-            // Do not cache errors, just return null
-            return null;
+            // Do not cache errors, just continue to the next layer instead of returning immediately
+            continue;
         }
     }
 
