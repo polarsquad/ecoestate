@@ -8,6 +8,7 @@
 - Environmental data endpoints (green spaces, public transport)
 - Postcode area boundary data integration
 - Scheduled tasks for data updates and caching
+- **Security**: Dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set via Terraform).
 
 ### Frontend
 - React application structure with TypeScript
@@ -17,6 +18,9 @@
 - Toggle functionality for different visualization types
 - Environmental data layer rendering
 - Layer visibility toggling UI components
+- **Security**:
+    - XSS vulnerabilities in Leaflet tooltips and dynamic HTML in `Legend` component addressed via HTML escaping.
+    - Content Security Policy (CSP) implemented via `<meta>` tag for development contexts.
 
 ### Development Environment
 - **✅ Complete Docker Compose setup for local development:**
@@ -37,6 +41,9 @@
   - Dynamic image versioning via `app_version` variable
 - **✅ Frontend Nginx proxy configured for backend communication in ACA.**
 - **✅ Verified application connectivity in Azure Container Apps.**
+- **Security**:
+    - Terraform module for Container Apps automatically configures `FRONTEND_ORIGIN_PROD` env var for backend CORS policy.
+    - Nginx configuration (`client/nginx.conf`) includes production Content Security Policy (CSP) HTTP header.
 
 ### Deployment Tooling (`scripts/`)
 - **✅ ACR Upload Script (`scripts/acr_upload.sh`):**
@@ -48,13 +55,14 @@
 ## 🔄 In Progress
 
 - CI/CD Pipeline Planning & Implementation
+- Thorough testing of Content Security Policy in all environments.
 
 ## ⬜ What's Left to Build
 
 ### CI/CD Pipeline
 - GitHub Actions or Azure DevOps pipeline definition
 - Automated build stage
-- Automated test stage
+- Automated test stage (including CSP verification if possible)
 - Automated image push stage (using `acr_upload.sh`)
 - Automated deployment stage (using Terraform)
 - Secure handling of secrets (e.g., integration with Azure Key Vault)
@@ -67,14 +75,14 @@
 ### Documentation & Testing
 - User documentation and guidelines
 - Code documentation (backend, frontend, Terraform)
-- Comprehensive testing (API, frontend, performance, infrastructure)
+- Comprehensive testing (API, frontend, performance, infrastructure, CSP)
 - Deployment verification and testing procedures
 
 ## 📊 Current Status
 
-The project has successfully completed Phase 3 and the infrastructure setup (Phase 4a) is now complete and verified. Containerization, Azure infrastructure definition via Terraform (including secure state and environment management), and the image upload script are all functional. Frontend-to-backend communication within the deployed Azure Container Apps environment has been successfully established and verified.
+The project has successfully completed Phase 3 and the infrastructure setup (Phase 4a) is now complete and verified. Containerization, Azure infrastructure definition via Terraform (including secure state and environment management), the image upload script, and initial security hardening (XSS, CORS, CSP) are all functional. Frontend-to-backend communication within the deployed Azure Container Apps environment has been successfully established and verified.
 
-The immediate next step is planning and implementing the CI/CD pipeline (Phase 4b).
+The immediate next steps are planning and implementing the CI/CD pipeline (Phase 4b) and thoroughly testing the new security policies.
 
 ### Completed Phases
 - ✅ Phase 1: Initial Project Setup & Data Exploration
@@ -89,7 +97,12 @@ The immediate next step is planning and implementing the CI/CD pipeline (Phase 4
   - ✅ ACR Image Upload Script created (`scripts/acr_upload.sh`).
   - ✅ Application connectivity verified in Azure.
   - ✅ Custom Domain configuration via Terraform is implemented.
+  - ✅ **Initial Security Hardening Completed**:
+    - XSS vulnerability fixes applied.
+    - Dynamic and secure CORS policy implemented for backend & Terraform.
+    - Content Security Policy (CSP) implemented for dev and prod.
   - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps.
+  - 🔄 Thorough testing of Content Security Policy.
 
 ### Upcoming Phases
 - ⬜ Phase 5: Refinement & Documentation
@@ -116,7 +129,10 @@ The immediate next step is planning and implementing the CI/CD pipeline (Phase 4
 - **Configured Terraform backend with Azure AD authentication**
 - **Standardized Docker image tagging using Semantic Versioning**
 - **Created a script for building and pushing versioned images to environment-specific ACRs**
-- **Resolved Terraform deployment issues (subnet delegation, state permissions, image architecture)**
+- **Resolved Terraform deployment issues (subnet delegation, state permissions, image architecture, cyclical dependencies in module configurations)**
 - **Implemented Nginx reverse proxy in frontend container to handle ACA internal communication.**
 - **Updated Terraform AzureRM Provider authentication to use explicit `subscription_id` and `tenant_id` variables due to provider version changes (v3.x/v4.x).**
 - **Implemented custom domain setup for Azure Container Apps with managed certificates and Azure DNS via Terraform.**
+- **Implemented XSS mitigation strategies** using HTML escaping for dynamic content in frontend components.
+- **Enhanced CORS policy** for the backend to be dynamic and secure, configured via environment variables set by Terraform.
+- **Introduced Content Security Policy (CSP)** with different configurations for development (meta tag) and production (Nginx header) to bolster application security.

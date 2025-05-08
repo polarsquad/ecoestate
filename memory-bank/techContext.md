@@ -7,9 +7,9 @@
 - **Build Tool**: Vite
 - **Map Visualization**: Leaflet.js
 - **HTTP Client**: Axios
-- **Styling**: Tailwind CSS
+- **Styling**: Tailwind CSS (Note: Verify if actually used or if standard CSS/component-specific CSS is the primary method)
 - **State Management**: React Hooks (useState, useContext)
-- **Production Web Server**: Nginx (within frontend container)
+- **Production Web Server**: Nginx (within frontend container, serves static files and CSP header)
 
 ### Backend
 - **Runtime**: Node.js
@@ -17,6 +17,7 @@
 - **API Documentation**: Swagger/OpenAPI
 - **Scheduled Tasks**: Node-cron
 - **Data Processing**: JavaScript/TypeScript utility libraries
+- **Security**: Dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` environment variable.
 
 ### Database
 - **Primary Options**: PostgreSQL or SQLite (Not currently implemented)
@@ -32,6 +33,7 @@
 - **Containerization**: Docker
 - **Cloud Platform**: Azure
 - **Compute**: Azure Container Apps (ACA)
+  - Backend container app receives `FRONTEND_ORIGIN_PROD` env var for CORS.
 - **Registry**: Azure Container Registry (ACR)
 - **Networking**: Azure Virtual Network (VNet) and Subnet
 - **Monitoring**: Azure Log Analytics Workspace
@@ -70,14 +72,17 @@
 - **Frontend**: Nginx serves static build output (`/app/dist`) and proxies `/api` requests.
   - Uses `client/nginx.conf` template and `client/entrypoint.sh` with `envsubst` to set backend URL via `BACKEND_URL` env var.
   - Proxies over HTTPS to backend's internal ACA FQDN on port 443.
+  - Serves Content Security Policy (CSP) HTTP header via Nginx configuration.
 - **Backend**: Runs compiled Node.js app (`dist/index.js`).
+  - `FRONTEND_ORIGIN_PROD` environment variable configured by Terraform for CORS policy.
 
 ### Project Structure
 - `/client` - Frontend React application
   - `Dockerfile` - Multi-stage, includes Nginx for production
-  - `nginx.conf` - Nginx config template for proxying
+  - `nginx.conf` - Nginx config template for proxying and CSP header
   - `entrypoint.sh` - Processes Nginx template
   - `vite.config.ts` - Vite config (proxy used in dev only)
+  - `/src/utils/stringUtils.ts` - Client-side string utility functions (e.g., `escapeHTML`).
 - `/server` - Backend Node.js/Express API
   - `Dockerfile` - Multi-stage build
 - `/plans` - Project documentation and planning
@@ -113,6 +118,9 @@
 - Secure Terraform state access (using Azure AD)
 - Network isolation via VNet
 - HTTPS-only communication between frontend proxy and backend in ACA.
+- **Cross-Origin Resource Sharing (CORS)**: Backend policy dynamically configured to allow specific frontend origins (development and production based on environment variables set by Terraform).
+- **Cross-Site Scripting (XSS) Prevention**: HTML escaping applied to dynamic content rendered outside React's default JSX escaping, particularly for third-party library integrations like Leaflet tooltips and legends.
+- **Content Security Policy (CSP)**: Implemented with different policies for development (via meta tag, more permissive for Vite HMR/dev server) and production (via Nginx HTTP header, stricter).
 
 ### Accessibility Standards
 - WCAG 2.1 AA compliance for web interface
@@ -124,6 +132,7 @@
 - **Frontend**: React Testing Library, Jest
 - **Backend**: Jest, Supertest
 - **Infrastructure**: (To be developed - potentially Terratest or integration tests)
+- **Security**: Manual testing of CORS policy, CSP violations (browser console), and XSS fixes. Automated checks for dependency vulnerabilities (e.g., `npm audit`) should be part of CI/CD.
 - **Methodology**: Test-driven development (TDD)
 - **Coverage**: Essential components and critical paths
 
@@ -135,6 +144,7 @@
 - Map visualization library (Leaflet)
 - GeoJSON processing utilities
 - Database client libraries (if DB implemented)
+- `cors` (Express middleware for CORS handling)
 
 ### Build & Development Tools
 - TypeScript compiler

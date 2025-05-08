@@ -41,6 +41,10 @@ Based on the implementation plan, the project is currently in the following stat
   - ✅ Resolved deployment connectivity issues (frontend Nginx proxy to backend ACA).
   - ✅ **Custom Domain Setup for Frontend Container App (using Azure DNS & Managed Certificate)**
     - Terraform configuration added to `container_apps` module for `azurerm_container_app_custom_domain`, `azurerm_dns_txt_record` (validation), and `azurerm_dns_cname_record`.
+  - ✅ **Security Hardening Implemented**:
+    - Addressed XSS vulnerabilities in frontend tooltips and dynamic HTML rendering.
+    - Implemented dynamic CORS policy for backend, configurable for production via environment variables and automatically set via Terraform.
+    - Added Content Security Policy (CSP) for both development (meta tag) and production (Nginx header).
   - 🔄 Planning CI/CD pipeline.
 
 - **Phase 5 (Refinement & Documentation)**: ⬜ NOT STARTED
@@ -65,27 +69,34 @@ Based on the implementation plan, the project is currently in the following stat
     - Configured for Azure-managed SSL certificate (`certificate_binding_type = "SniEnabled"`).
     - Added `lifecycle { ignore_changes = ["certificate_binding_type", "container_app_environment_certificate_id"] }` to `azurerm_container_app_custom_domain` to handle Azure-managed fields.
 - ⚠️ Temporarily disabled frontend fetching/display of green spaces layer due to performance issues with large dataset (`client/src/components/PostcodeBoundaries.tsx`).
+- ✅ **XSS Vulnerability Remediation**:
+    - Created `escapeHTML` utility in `client/src/utils/stringUtils.ts`.
+    - Applied sanitization to dynamic content in Leaflet tooltips (`PostcodeBoundaries.tsx`) and legend titles (`Legend.tsx`).
+- ✅ **CORS Configuration Enhancements**:
+    - Backend (`server/src/index.ts`) CORS policy now dynamically configured using `NODE_ENV` and `FRONTEND_ORIGIN_PROD` environment variable.
+    - Terraform module `tf/modules/container_apps/main.tf` updated to automatically set `FRONTEND_ORIGIN_PROD` on the backend container, resolving potential cyclical dependencies by constructing default FQDNs where necessary and using a local variable for the frontend app name.
+- ✅ **Content Security Policy (CSP) Implementation**:
+    - Added development CSP via `<meta http-equiv="Content-Security-Policy">` in `client/index.html`.
+    - Added production CSP via HTTP header in `client/nginx.conf`.
 
 ## Next Steps
 
-With the core infrastructure defined and application connectivity verified in Azure, the next steps are:
+With the core infrastructure defined, application connectivity verified in Azure, and initial security hardening in place, the next steps are:
 
-1.  **Develop CI/CD Pipeline**: 
+1.  **Develop CI/CD Pipeline**:
     - Set up GitHub Actions or Azure DevOps pipeline.
     - Configure build, test, image push (using `acr_upload.sh`), and deployment (using Terraform) stages.
     - Implement automated testing before deployment.
     - Securely manage secrets (e.g., using Azure Key Vault, referenced in Terraform/pipeline).
-
-2.  **Start Phase 5 Work**: 
+2.  **Thoroughly Test CSP**: Verify CSP in both development and production environments, checking for console errors and ensuring all site functionality remains intact.
+3.  **Start Phase 5 Work**:
     - Begin implementing correlation logic between property prices and environmental factors.
     - Develop detailed location-specific insights and pop-ups.
     - Write comprehensive user and developer documentation.
-
-3.  **Testing and Deployment**: 
+4.  **Testing and Deployment**:
     - Thoroughly test the application in deployed environments (dev, staging).
     - Deploy the initial version to production.
-
-4.  **Planning for efficient implementation of correlation analysis features**:
+5.  **Planning for efficient implementation of correlation analysis features**:
     - **Investigate performance improvements for loading/displaying the green spaces layer** (e.g., backend simplification, alternative data sources, frontend optimization).
 
 ## Active Decisions
@@ -100,6 +111,9 @@ With the core infrastructure defined and application connectivity verified in Az
 - **Internal Communication**: Frontend Nginx proxies `/api` requests to backend over HTTPS using ACA internal DNS and port 443.
 - **Terraform Provider Authentication**: Explicit `subscription_id` and `tenant_id` via root module variables for AzureRM v3.x/v4.x.
 - **Custom Domain (ACA)**: Using Azure DNS for automated TXT validation and CNAME records, with Azure-managed certificates.
+- **Security - XSS Prevention**: Utilize HTML escaping for dynamic content rendered outside of React's default JSX escaping, especially with third-party libraries that use `innerHTML` or construct HTML strings.
+- **Security - CORS Policy**: Backend employs a dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set by Terraform in Azure), allowing specific origins rather than wildcards.
+- **Security - Content Security Policy (CSP)**: Dual CSP setup: `<meta>` tag for more permissive development policy (Vite HMR), and stricter HTTP header from Nginx for production.
 
 ## Current Challenges
 
@@ -107,6 +121,7 @@ With the core infrastructure defined and application connectivity verified in Az
 - Configuring proper scaling rules for Container Apps.
 - Designing effective CI/CD pipeline for reliable deployments and promotions.
 - Planning for efficient implementation of correlation analysis features.
+- **Verifying robustness and compatibility of the implemented Content Security Policy across all features and browsers.**
 
 ## User Feedback Insights
 
@@ -132,3 +147,6 @@ With the core infrastructure defined and application connectivity verified in Az
 - **AzureRM Provider Upgrades**: Newer versions (v3.x onwards) have stricter authentication requirements, necessitating explicit `subscription_id` and `tenant_id` configuration if not using other auth methods like MSI/SPN env vars.
 - **Azure Container App Custom Domain Lifecycle**: Correctly configuring `azurerm_container_app_custom_domain` with `lifecycle { ignore_changes = [...] }` is crucial for Azure-managed certificates to prevent Terraform from fighting Azure over auto-populated certificate details. Understanding the asynchronous nature of domain validation and certificate issuance by Azure is key.
 - **Terraform ID Parsing**: Errors like `parsing segment "staticCertificates": parsing the Certificate ID: the segment at position 8 didn't match` can occur if Azure returns certificate IDs in a format slightly different from what the provider expects for specific attributes, highlighting the importance of `ignore_changes` for Azure-managed certificate IDs.
+- **Terraform Cyclical Dependencies**: When configuring inter-dependent resources (like frontend FQDN for backend CORS, and backend FQDN for frontend API proxy), care must be taken to avoid direct circular references. Constructing FQDNs from known components (like app name and environment default domain) can break such cycles.
+- **Content Security Policy (CSP) Implementation**: Requires different approaches for development (Vite's needs) and production (server-sent headers). Understanding directive interactions (e.g., `default-src` as fallback) and library-specific needs (e.g., Leaflet potentially using inline styles) is important.
+- **HTML Sanitization**: Essential when embedding dynamic data into HTML strings used by third-party libraries or `innerHTML`, even if the data originates from trusted API sources, as a defense-in-depth measure.
