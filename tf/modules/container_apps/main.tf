@@ -13,6 +13,8 @@ locals {
 
   cname_record_name = local.record_prefix != null ? (local.record_prefix == "" ? "@" : local.record_prefix) : null
   txt_record_name   = local.record_prefix != null ? (local.record_prefix == "" ? "asuid" : "asuid.${local.record_prefix}") : null
+
+  frontend_app_name = "${var.project_name}-${var.environment}-frontend"
 }
 
 resource "azurerm_log_analytics_workspace" "logs" {
@@ -49,7 +51,7 @@ resource "azurerm_role_assignment" "acr_pull" {
 
 # Frontend Container App
 resource "azurerm_container_app" "frontend" {
-  name                         = "${var.project_name}-${var.environment}-frontend"
+  name                         = local.frontend_app_name
   container_app_environment_id = azurerm_container_app_environment.environment.id
   resource_group_name          = var.resource_group_name
   revision_mode                = "Single"
@@ -130,6 +132,17 @@ resource "azurerm_container_app" "backend" {
       env {
         name  = "NODE_ENV"
         value = var.environment
+      }
+      env {
+        name  = "PORT"
+        value = "3001"
+      }
+      env {
+        name = "FRONTEND_ORIGIN_PROD"
+        # Construct the default FQDN manually to break the cycle with the frontend app
+        # The frontend app name is deterministic: use local.frontend_app_name
+        # The environment's default domain is available from azurerm_container_app_environment.environment.default_domain
+        value = local.configure_custom_domain ? "https://${var.frontend_custom_hostname}" : "https://${local.frontend_app_name}.${azurerm_container_app_environment.environment.default_domain}"
       }
     }
     min_replicas = 1

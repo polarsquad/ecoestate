@@ -9,6 +9,7 @@ import YearSlider from './YearSlider';
 import PeriodSlider from './PeriodSlider';
 import VisualizationSelector, { VisualizationType } from './VisualizationSelector';
 import LayerControl from './LayerControl';
+import { escapeHTML } from '../utils/stringUtils';
 
 // Define the coordinate systems
 // EPSG:3879 - Helsinki local coordinate system (used by HSY)
@@ -279,7 +280,7 @@ const PostcodeBoundaries: React.FC = () => {
         if (!postalCode) return;
 
         const getTooltipContent = () => {
-            let content = `<b>Postcode: ${postalCode}</b>`;
+            let content = `<b>Postcode: ${escapeHTML(postalCode)}</b>`;
             if (!dataLoadedForMode) {
                 content += `<br/><i>Loading data...</i>`;
                 return content;
@@ -288,10 +289,10 @@ const PostcodeBoundaries: React.FC = () => {
             if (visualizationType === 'heatmap') {
                 const priceData = propertyPrices.find(p => p.postalCode === postalCode);
                 if (priceData) {
-                    content += `<br/><b>${priceData.district}, ${priceData.municipality}</b><br/><hr/>`;
+                    content += `<br/><b>${escapeHTML(priceData.district)}, ${escapeHTML(priceData.municipality)}</b><br/><hr/>`;
                     const priceInfo = Object.entries(priceData.prices)
                         .filter(([, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
-                        .map(([type, price]) => `${type}: ${price} €/m²`);
+                        .map(([type, price]) => `${escapeHTML(type)}: ${escapeHTML(price)} €/m²`);
                     if (priceInfo.length > 0) {
                         content += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
                     } else {
@@ -303,14 +304,17 @@ const PostcodeBoundaries: React.FC = () => {
             } else if (visualizationType === 'trend') {
                 const trendData = priceTrends.find(p => p.postalCode === postalCode);
                 if (trendData) {
-                    content += `<br/><b>${trendData.district}, ${trendData.municipality}</b><br/><hr/>`;
-                    content += `<b>Price Trends (${selectedEndYear - 4}-${selectedEndYear}):</b><br/>`;
+                    content += `<br/><b>${escapeHTML(trendData.district)}, ${escapeHTML(trendData.municipality)}</b><br/><hr/>`;
+                    content += `<b>Price Trends (${escapeHTML(selectedEndYear - 4)}-${escapeHTML(selectedEndYear)}):</b><br/>`;
                     const trendInfo = Object.entries(trendData.trends)
                         .filter(([, data]) => data !== null)
                         .map(([type, data]) => {
                             if (!data) return '';
                             const directionArrow = data.direction === 'up' ? '↑' : data.direction === 'down' ? '↓' : '→';
-                            return `${type}: ${data.percentChange.toFixed(1)}% ${directionArrow} (${data.startPrice ?? 'N/A'} → ${data.endPrice ?? 'N/A'} €/m²)`;
+                            // Ensure all parts are escaped, especially type and potentially prices if they could be strings
+                            const startPriceStr = data.startPrice !== null ? escapeHTML(data.startPrice) : 'N/A';
+                            const endPriceStr = data.endPrice !== null ? escapeHTML(data.endPrice) : 'N/A';
+                            return `${escapeHTML(type)}: ${escapeHTML(data.percentChange.toFixed(1))}% ${directionArrow} (${startPriceStr} → ${endPriceStr} €/m²)`;
                         })
                         .filter(info => info !== '');
                     if (trendInfo.length > 0) {
@@ -349,7 +353,7 @@ const PostcodeBoundaries: React.FC = () => {
 
     const onEachGreenSpaceFeature = (feature: Feature<Geometry, GreenSpaceProperties>, layer: L.Layer) => {
         if (feature.properties?.name) {
-            layer.bindTooltip(feature.properties.name);
+            layer.bindTooltip(escapeHTML(feature.properties.name));
         }
     };
 
