@@ -59,7 +59,7 @@ describe('Postcode Routes API (/api/postcodes)', () => {
 
         expect(response.status).toBe(500);
         expect(response.headers['content-type']).toMatch(/json/);
-        expect(response.body).toEqual({ error: 'Internal server error while retrieving postcode boundaries.' });
+        expect(response.body).toEqual({ error: unexpectedError.message });
         expect(mockedHsyWfsService.getPostcodeBoundaries).toHaveBeenCalledTimes(1);
 
         consoleErrorSpy.mockRestore(); // Restore console.error

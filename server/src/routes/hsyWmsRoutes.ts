@@ -33,11 +33,17 @@ const getWalkingDistanceHandler = async (req: Request, res: Response) => {
             // The service layer logs errors, so we can just indicate not found here.
             res.status(404).json({ message: 'Point is outside known walking distance zones or data unavailable.', walkingDistance: null });
         }
-    } catch (error: any) {
+    } catch (error) {
         // This catch block is more for unexpected errors *within this handler*
         // Service errors during WMS calls are handled within getWalkingDistance/checkWmsLayer
-        console.error('Error in /api/walking-distance route handler:', error.message);
-        res.status(500).json({ error: 'Internal server error while calculating walking distance.' });
+        let errorMessage = 'Internal server error while calculating walking distance.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            console.error('Error in /api/walking-distance route handler:', error.message);
+        } else {
+            console.error('Unknown error in /api/walking-distance route handler:', error);
+        }
+        res.status(500).json({ error: errorMessage });
     }
 };
 

@@ -17,10 +17,17 @@ router.get('/', async (_req: Request, res: Response) => {
             // Service layer would have logged the specific error
             res.status(500).json({ error: 'Failed to retrieve postcode boundaries.' });
         }
-    } catch (error: any) {
-        // Catch unexpected errors during the request handling itself
-        console.error('Error in /api/postcodes route handler:', error.message);
-        res.status(500).json({ error: 'Internal server error while retrieving postcode boundaries.' });
+    } catch (error) {
+        // The service function (getPostcodeBoundaries) handles its own logging for API errors.
+        // This catch is for unexpected errors within this handler or if the service re-throws.
+        let errorMessage = 'Failed to get postcode boundaries.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            console.error('Error in /postcodes route handler:', error.message);
+        } else {
+            console.error('Unknown error in /postcodes route handler:', error);
+        }
+        res.status(500).json({ error: errorMessage });
     }
 });
 

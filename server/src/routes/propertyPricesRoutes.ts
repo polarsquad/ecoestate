@@ -21,10 +21,20 @@ const pricesForYearHandler: RequestHandler = async (req: Request, res: Response)
 
         const priceData = await fetchStatFiPropertyData(year);
         res.json({ data: priceData });
-    } catch (error: any) {
-        console.error(`Error in / route handler for year ${req.query.year}:`, error.message);
+    } catch (error) {
+        let reqYear = 'unknown';
+        if (req.query.year && typeof req.query.year === 'string') {
+            reqYear = req.query.year;
+        }
+        let errorMessage = 'Internal server error while retrieving property prices for the specified year.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            console.error(`Error in / route handler for year ${reqYear}:`, error.message);
+        } else {
+            console.error(`Unknown error in / route handler for year ${reqYear}:`, error);
+        }
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal server error while retrieving property prices for the specified year.' });
+            res.status(500).json({ error: errorMessage });
         }
     }
 };
@@ -64,11 +74,17 @@ const trendsHandler: RequestHandler = async (req: Request, res: Response): Promi
                 periodLength
             }
         });
-    } catch (error: any) {
-        console.error('Error in /trends route handler:', error.message);
+    } catch (error) {
+        let errorMessage = 'Internal server error while retrieving property price trends.';
+        if (error instanceof Error) {
+            errorMessage = error.message;
+            console.error('Error in /trends route handler:', error.message);
+        } else {
+            console.error('Unknown error in /trends route handler:', error);
+        }
         // Ensure response is sent even on error and satisfy Promise<void>
         if (!res.headersSent) {
-            res.status(500).json({ error: 'Internal server error while retrieving property price trends.' });
+            res.status(500).json({ error: errorMessage });
         }
     }
 };

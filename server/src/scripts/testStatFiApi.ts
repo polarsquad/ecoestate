@@ -241,4 +241,4 @@ async function fetchPropertyData() {
     }
 }
 
-fetchPropertyData(); 
+void fetchPropertyData(); // Mark as void to satisfy no-floating-promises 
