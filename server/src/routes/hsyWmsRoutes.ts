@@ -1,12 +1,11 @@
-import express, { RequestHandler } from 'express';
-import { Request, Response } from 'express';
+import express, { Router, Request, Response } from 'express';
 import { getWalkingDistance } from '../services/hsyWmsService';
 
-const router = express.Router();
+const router: Router = express.Router();
 
 // Route to get the walking distance zone for a given point (EPSG:3879)
 // Expects query parameters: x, y
-const getWalkingDistanceHandler: RequestHandler = async (req, res) => {
+const getWalkingDistanceHandler = async (req: Request, res: Response) => {
     const { x, y } = req.query;
 
     // Basic validation

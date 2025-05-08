@@ -1,7 +1,5 @@
 import axios from 'axios';
 import {
-    Category,
-    Dimension,
     JsonStatResponse,
     BuildingPrices,
     PostalCodeData,

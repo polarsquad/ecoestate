@@ -27,7 +27,7 @@ export interface PostalCodeData {
     postalCode: string;
     district: string;
     municipality: string;
-    fullLabel: string; // Original label from API for reference
+    fullLabel: string; // e.g., "00100 Helsinki Keskusta (Helsinki)"
     prices: BuildingPrices;
 }
 
@@ -47,6 +47,29 @@ export interface PriceTrendData {
         } | null; // Allow null if trend couldn't be calculated
     };
 }
+
+// --- Added Price Trend Types --- 
+
+export interface PriceTrendValue {
+    percentChange: number;
+    direction: 'up' | 'down' | 'stable';
+    startPrice: number | null;
+    endPrice: number | null;
+    averageYearlyChange: number;
+}
+
+export interface PriceTrend {
+    postalCode: string;
+    district: string;
+    municipality: string;
+    fullLabel: string;
+    trends: {
+        [buildingType: string]: PriceTrendValue | null;
+    };
+}
+
+// Type used for the SimpleCache value
+export type StatFiValue = PostalCodeData[];
 
 // --- Type for console.table output in testStatFiApi.ts script ---
 export interface TableRow {

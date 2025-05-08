@@ -1,6 +1,5 @@
 import express, { Request, Response, Router } from 'express';
 import { fetchGreenSpaces } from '../services/overpassService';
-import { FeatureCollection } from 'geojson';
 
 const router: Router = express.Router();
 
@@ -22,7 +21,7 @@ router.get('/green-spaces', async (req: Request, res: Response) => {
 
     try {
         // Call service without bbox
-        const greenSpaceGeoJson: FeatureCollection = await fetchGreenSpaces();
+        const greenSpaceGeoJson = await fetchGreenSpaces();
 
         // Return the GeoJSON FeatureCollection directly
         res.json(greenSpaceGeoJson); // Send the GeoJSON data

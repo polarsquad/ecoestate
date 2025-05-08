@@ -1,6 +1,5 @@
 import express, { Request, Response, Router, RequestHandler } from 'express';
 import { fetchStatFiPropertyData, calculatePriceTrends } from '../services/statFiService';
-import { PostalCodeData } from '../types/statfi.types';
 
 const router: Router = express.Router();
 

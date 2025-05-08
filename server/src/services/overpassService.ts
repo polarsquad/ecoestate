@@ -1,15 +1,17 @@
 import axios from 'axios';
-import { OverpassResponse, OverpassElement } from '../types/overpass.types';
+import osmtogeojson from 'osmtogeojson';
+import { FeatureCollection, GeoJsonProperties, Geometry } from 'geojson';
 import { SimpleCache } from '../utils/cache';
-import osmtogeojson from 'osmtogeojson'; // Import the conversion library
-import { FeatureCollection } from 'geojson'; // Import GeoJSON type
+import {
+    OverpassResponse
+} from '../types/overpass.types';
 
 // Define the specific type for this cache's values (now GeoJSON)
-type OverpassValue = FeatureCollection;
+type OverpassCacheValue = FeatureCollection;
 
 // Cache configuration
 const OVERPASS_CACHE_TTL = 1000 * 60 * 60; // 1 hour
-const overpassCache = new SimpleCache<OverpassValue>('Overpass Green Spaces GeoJSON', OVERPASS_CACHE_TTL);
+const overpassCache = new SimpleCache<OverpassCacheValue>('Overpass Green Spaces GeoJSON', OVERPASS_CACHE_TTL);
 
 // Define the static bounding box for the Helsinki Metropolitan Area
 const HELSINKI_REGION_BBOX = '59.9,24.4,60.5,25.4'; // South, West, North, East
@@ -111,7 +113,7 @@ export async function fetchGreenSpaces(): Promise<FeatureCollection> {
         }
 
         // Convert the Overpass response data to GeoJSON
-        const geojsonData = osmtogeojson(response.data) as FeatureCollection;
+        const geojsonData = osmtogeojson(response.data);
 
         console.log(`Successfully received and converted ${geojsonData.features.length} green space features from Overpass API for Helsinki region.`);
 
