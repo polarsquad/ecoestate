@@ -44,6 +44,7 @@
 - **Security**:
     - Terraform module for Container Apps automatically configures `FRONTEND_ORIGIN_PROD` env var for backend CORS policy.
     - Nginx configuration (`client/nginx.conf`) includes production Content Security Policy (CSP) HTTP header.
+    - Nginx configuration (`client/nginx.conf`) includes `X-Content-Type-Options: nosniff` header.
 
 ### Deployment Tooling (`scripts/`)
 - **✅ ACR Upload Script (`scripts/acr_upload.sh`):**
@@ -101,6 +102,7 @@ The immediate next steps are planning and implementing the CI/CD pipeline (Phase
     - XSS vulnerability fixes applied.
     - Dynamic and secure CORS policy implemented for backend & Terraform.
     - Content Security Policy (CSP) implemented for dev and prod.
+    - `X-Content-Type-Options: nosniff` header implemented for prod.
   - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps.
   - 🔄 Thorough testing of Content Security Policy.
 
@@ -135,4 +137,6 @@ The immediate next steps are planning and implementing the CI/CD pipeline (Phase
 - **Implemented custom domain setup for Azure Container Apps with managed certificates and Azure DNS via Terraform.**
 - **Implemented XSS mitigation strategies** using HTML escaping for dynamic content in frontend components.
 - **Enhanced CORS policy** for the backend to be dynamic and secure, configured via environment variables set by Terraform.
-- **Introduced Content Security Policy (CSP)** with different configurations for development (meta tag) and production (Nginx header) to bolster application security.
+- **Introduced Security Headers**:
+    - Content Security Policy (CSP) with different configurations for development (meta tag) and production (Nginx header) to bolster application security.
+    - `X-Content-Type-Options: nosniff` added via Nginx to prevent MIME sniffing.
