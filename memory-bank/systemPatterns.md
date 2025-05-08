@@ -74,7 +74,8 @@ EcoEstate follows a classic three-tier architecture:
    - **Modularity**: Modules for `acr`, `networking`, `container_apps`.
    - **Environment Management**: Terraform workspaces (dev, staging, prod).
    - **State Management**: Remote Azure Blob Storage backend with Azure AD auth.
-   - **Dynamic Configuration**: `app_version` variable in Terraform.
+   - **Dynamic Configuration**: `app_version` variable in Terraform for image versions.
+   - **Provider Authentication**: AzureRM provider configured to use explicit `subscription_id` and `tenant_id` passed as root module variables (e.g., via `terraform.tfvars`). This became necessary after provider upgrades (v3.x/v4.x).
 
 7. **Reverse Proxy Pattern (ACA)**
    - **Location**: Nginx running inside the frontend container app.
@@ -82,6 +83,21 @@ EcoEstate follows a classic three-tier architecture:
    - **Mechanism**: `proxy_pass` directive in `nginx.conf` uses an environment variable (`BACKEND_URL`) containing the backend's internal ACA FQDN. Uses HTTPS on port 443.
    - **Configuration**: Nginx config template (`nginx.conf`) is processed by an `entrypoint.sh` script using `envsubst` to inject the backend URL at container startup.
    - **Security**: Proxies to the backend's internal HTTPS endpoint; Terraform ensures backend only allows HTTPS ingress.
+
+8. **Custom Domain and Certificate Management (ACA) (Implemented & In Progress)**
+   - **Goal**: Assign a user-friendly custom domain to the frontend Azure Container App.
+   - **Method**: Using `azurerm_container_app_custom_domain` resource in Terraform.
+   - **DNS Configuration (if Azure DNS is used)**:
+     - `azurerm_dns_txt_record`: Automatically created by Terraform for domain ownership validation (`asuid.{subdomain}` pointing to the Container App's `custom_domain_verification_id`).
+     - `azurerm_dns_cname_record`: Automatically created by Terraform to point the custom hostname (e.g., `www.yourdomain.com`) to the Container App's default FQDN. (Note: Apex domain CNAMEs are generally avoided; ALIAS records would be an alternative if needed for apex).
+   - **Certificate**: Azure-managed SSL certificate.
+     - `certificate_binding_type` set to `SniEnabled`.
+     - `container_app_environment_certificate_id` is not explicitly set in Terraform, allowing Azure to manage it.
+   - **Terraform `lifecycle` block**: `ignore_changes` for `certificate_binding_type` and `container_app_environment_certificate_id` on the `azurerm_container_app_custom_domain` resource to prevent issues with Azure auto-populating these fields for managed certificates.
+   - **Troubleshooting**:
+     - "No binding" status in Azure portal: Often due to pending domain validation or issues with the `lifecycle` block.
+     - "Connection reset by peer" (TLS handshake): Typically related to SNI mismatch or certificate not fully provisioned/bound for the custom domain.
+     - Terraform errors on `managedCertificates` vs `certificates` path: Indicates issues with how the provider parses Azure-managed certificate IDs, underscoring the importance of `ignore_changes`.
 
 ## Critical Implementation Paths
 

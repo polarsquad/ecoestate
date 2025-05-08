@@ -88,6 +88,7 @@ The immediate next step is planning and implementing the CI/CD pipeline (Phase 4
   - ✅ Azure Infrastructure defined with Terraform (`tf/`) and deployed.
   - ✅ ACR Image Upload Script created (`scripts/acr_upload.sh`).
   - ✅ Application connectivity verified in Azure.
+  - ✅ Custom Domain configuration via Terraform is implemented.
   - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps.
 
 ### Upcoming Phases
@@ -117,3 +118,5 @@ The immediate next step is planning and implementing the CI/CD pipeline (Phase 4
 - **Created a script for building and pushing versioned images to environment-specific ACRs**
 - **Resolved Terraform deployment issues (subnet delegation, state permissions, image architecture)**
 - **Implemented Nginx reverse proxy in frontend container to handle ACA internal communication.**
+- **Updated Terraform AzureRM Provider authentication to use explicit `subscription_id` and `tenant_id` variables due to provider version changes (v3.x/v4.x).**
+- **Implemented custom domain setup for Azure Container Apps with managed certificates and Azure DNS via Terraform.**

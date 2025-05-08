@@ -1,3 +1,20 @@
+locals {
+  # Determine if a custom hostname is configured and if DNS zone info is provided
+  configure_custom_domain = var.frontend_custom_hostname != null && var.dns_zone_name != null && var.dns_zone_resource_group_name != null
+
+  # Derive DNS record names. Assumes dns_zone_name is a suffix of frontend_custom_hostname.
+  # Example: frontend_custom_hostname = "www.example.com", dns_zone_name = "example.com"
+  #          -> record_prefix = "www"
+  # Example: frontend_custom_hostname = "example.com", dns_zone_name = "example.com" (apex)
+  #          -> record_prefix = "" (will be adjusted to "@" for CNAME, "" for TXT asuid prefix)
+  record_prefix = local.configure_custom_domain ? (
+    var.frontend_custom_hostname == var.dns_zone_name ? "" : replace(var.frontend_custom_hostname, ".${var.dns_zone_name}", "")
+  ) : null
+
+  cname_record_name = local.record_prefix != null ? (local.record_prefix == "" ? "@" : local.record_prefix) : null
+  txt_record_name   = local.record_prefix != null ? (local.record_prefix == "" ? "asuid" : "asuid.${local.record_prefix}") : null
+}
+
 resource "azurerm_log_analytics_workspace" "logs" {
   name                = "${var.project_name}-${var.environment}-logs"
   location            = var.location
@@ -118,4 +135,56 @@ resource "azurerm_container_app" "backend" {
     min_replicas = 1
     max_replicas = 3
   }
+}
+
+resource "azurerm_dns_txt_record" "frontend_domain_validation" {
+  count = local.configure_custom_domain && local.txt_record_name != null ? 1 : 0
+
+  name                = local.txt_record_name
+  zone_name           = var.dns_zone_name
+  resource_group_name = var.dns_zone_resource_group_name
+  ttl                 = 300
+  record {
+    value = azurerm_container_app.frontend.custom_domain_verification_id
+  }
+  tags = var.tags
+}
+
+resource "azurerm_container_app_custom_domain" "frontend_custom_domain" {
+  count = local.configure_custom_domain ? 1 : 0
+
+  name                     = var.frontend_custom_hostname
+  container_app_id         = azurerm_container_app.frontend.id
+  certificate_binding_type = "SniEnabled" # For managed certificates
+
+  # For Azure-managed certificates, certificate_id is not provided.
+  # Lifecycle ignore_changes might be needed if Azure auto-populates related fields.
+  lifecycle {
+    ignore_changes = [
+      # Required when using an Azure-created Managed Certificate to prevent resource recreation.
+      certificate_binding_type,
+      container_app_environment_certificate_id
+    ]
+  }
+
+  depends_on = [
+    azurerm_container_app.frontend,
+    azurerm_dns_txt_record.frontend_domain_validation # Ensure TXT record is attempted first
+  ]
+}
+
+# CNAME record for the custom hostname
+# Note: CNAME at the zone apex (e.g., "example.com") is generally not recommended.
+# Azure DNS supports ALIAS records for this, which can point to Azure resources.
+# If an apex domain is needed, consider azurerm_dns_alias_record pointing to the Container App.
+# For this example, we use CNAME, which works for subdomains (e.g., www.example.com).
+resource "azurerm_dns_cname_record" "frontend_app_cname" {
+  count = local.configure_custom_domain && local.cname_record_name != null && local.cname_record_name != "@" ? 1 : 0 # Avoid CNAME @ for now
+
+  name                = local.cname_record_name
+  zone_name           = var.dns_zone_name
+  resource_group_name = var.dns_zone_resource_group_name
+  ttl                 = 300
+  record              = azurerm_container_app.frontend.ingress[0].fqdn
+  tags                = var.tags
 }

@@ -39,6 +39,8 @@ Based on the implementation plan, the project is currently in the following stat
     - Pushes images to the correct ACR based on Terraform workspace.
     - Uses Azure CLI for ACR authentication.
   - ✅ Resolved deployment connectivity issues (frontend Nginx proxy to backend ACA).
+  - ✅ **Custom Domain Setup for Frontend Container App (using Azure DNS & Managed Certificate)**
+    - Terraform configuration added to `container_apps` module for `azurerm_container_app_custom_domain`, `azurerm_dns_txt_record` (validation), and `azurerm_dns_cname_record`.
   - 🔄 Planning CI/CD pipeline.
 
 - **Phase 5 (Refinement & Documentation)**: ⬜ NOT STARTED
@@ -55,12 +57,13 @@ Based on the implementation plan, the project is currently in the following stat
 - ✅ Created and refined `scripts/acr_upload.sh` for building, tagging (SemVer), and pushing images.
 - ✅ Aligned Terraform Container Apps configuration to pull images based on a specified version variable.
 - ✅ Resolved various Terraform deployment issues (subnet delegation, state permissions, image architecture).
-- ✅ **Troubleshooted and fixed frontend-to-backend communication within Azure Container Apps:**
-    - Implemented Nginx reverse proxy in the frontend container (`client/nginx.conf`, `client/entrypoint.sh`).
-    - Configured Nginx to proxy `/api` requests securely over HTTPS to the backend's internal ACA FQDN using port 443.
-    - Set necessary Nginx proxy headers (`proxy_http_version`, `proxy_ssl_server_name on`) for ACA environment.
-    - Configured Terraform to pass the backend URL to the frontend container via environment variable (`BACKEND_URL`).
-    - Ensured backend Container App ingress is configured for HTTPS internal transport.
+- ✅ **Troubleshooted and fixed frontend-to-backend communication within Azure Container Apps.**
+- ✅ **Updated Terraform AzureRM Provider authentication**: Switched from implicit/`use_cli` attempts to explicit `subscription_id` and `tenant_id` configuration via root module variables (`azure_subscription_id`, `azure_tenant_id` in `tf/variables.tf` and `README.md` updated).
+- ✅ **Initiated Custom Domain Setup for Frontend Container App**:
+    - Added `azurerm_container_app_custom_domain` to `container_apps` module.
+    - Added `azurerm_dns_txt_record` for validation and `azurerm_dns_cname_record` for pointing the custom hostname (all within Azure DNS, managed by Terraform).
+    - Configured for Azure-managed SSL certificate (`certificate_binding_type = "SniEnabled"`).
+    - Added `lifecycle { ignore_changes = ["certificate_binding_type", "container_app_environment_certificate_id"] }` to `azurerm_container_app_custom_domain` to handle Azure-managed fields.
 - ⚠️ Temporarily disabled frontend fetching/display of green spaces layer due to performance issues with large dataset (`client/src/components/PostcodeBoundaries.tsx`).
 
 ## Next Steps
@@ -95,6 +98,8 @@ With the core infrastructure defined and application connectivity verified in Az
 - **State Management**: Terraform state stored in Azure Blob Storage with Azure AD/Entra ID authentication.
 - **Image Tagging**: Semantic Versioning 2.0.0 for Docker images.
 - **Internal Communication**: Frontend Nginx proxies `/api` requests to backend over HTTPS using ACA internal DNS and port 443.
+- **Terraform Provider Authentication**: Explicit `subscription_id` and `tenant_id` via root module variables for AzureRM v3.x/v4.x.
+- **Custom Domain (ACA)**: Using Azure DNS for automated TXT validation and CNAME records, with Azure-managed certificates.
 
 ## Current Challenges
 
@@ -124,3 +129,6 @@ With the core infrastructure defined and application connectivity verified in Az
     - Set `proxy_http_version 1.1`, and `proxy_ssl_server_name on` in Nginx for HTTPS proxying.
     - Pass backend URL via environment variable.
 - **Large datasets from APIs (like Overpass for green spaces) can cause significant frontend performance issues.** Need strategies for data simplification or optimization before displaying on the map.
+- **AzureRM Provider Upgrades**: Newer versions (v3.x onwards) have stricter authentication requirements, necessitating explicit `subscription_id` and `tenant_id` configuration if not using other auth methods like MSI/SPN env vars.
+- **Azure Container App Custom Domain Lifecycle**: Correctly configuring `azurerm_container_app_custom_domain` with `lifecycle { ignore_changes = [...] }` is crucial for Azure-managed certificates to prevent Terraform from fighting Azure over auto-populated certificate details. Understanding the asynchronous nature of domain validation and certificate issuance by Azure is key.
+- **Terraform ID Parsing**: Errors like `parsing segment "staticCertificates": parsing the Certificate ID: the segment at position 8 didn't match` can occur if Azure returns certificate IDs in a format slightly different from what the provider expects for specific attributes, highlighting the importance of `ignore_changes` for Azure-managed certificate IDs.

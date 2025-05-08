@@ -45,8 +45,29 @@ variable "subnet_id" {
 }
 
 variable "app_version" {
-  description = "The semantic version tag of the application images to deploy"
+  description = "The version tag of the app images to deploy"
   type        = string
+}
+
+variable "dns_zone_name" {
+  description = "The name of the Azure DNS zone for CNAME and TXT records. Required if frontend_custom_hostname is set."
+  type        = string
+  nullable    = true
+  default     = null
+}
+
+variable "dns_zone_resource_group_name" {
+  description = "The name of the resource group where the Azure DNS zone is located. Required if frontend_custom_hostname is set."
+  type        = string
+  nullable    = true
+  default     = null
+}
+
+variable "frontend_custom_hostname" {
+  description = "The custom hostname for the frontend (e.g., 'www.yourdomain.com'). If null or empty, custom domain won't be configured."
+  type        = string
+  nullable    = true
+  default     = null
 }
 
 variable "tags" {

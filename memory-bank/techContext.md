@@ -37,7 +37,9 @@
 - **Monitoring**: Azure Log Analytics Workspace
 - **Identity**: Azure User Assigned Managed Identity (for ACA -> ACR access)
 - **Infrastructure as Code**: Terraform
+- **Provider Version**: AzureRM Provider v3.x/v4.x (requires explicit `subscription_id` and `tenant_id` passed via root module variables)
 - **State Storage**: Azure Blob Storage (with Azure AD Auth)
+- **Custom Domain Setup (ACA)**: Azure DNS for TXT (validation) and CNAME records, Azure-managed certificates for the Container App custom domain. Implemented in `container_apps` module.
 - **CI/CD**: GitHub Actions or Azure DevOps (Planned)
 
 ## Development Setup
@@ -49,7 +51,8 @@
 - Code editor supporting Docker Compose (VS Code recommended)
 - API keys for external services (managed via `.env` locally)
 - Terraform CLI
-- Azure CLI
+- Requires `azure_subscription_id` and `azure_tenant_id` to be set (e.g., via `tf/terraform.tfvars`) for AzureRM provider authentication.
+- Azure CLI (for `az login`, ACR authentication, and obtaining auth IDs)
 
 ### Containerized Development (Docker Compose)
 - **Multi-Service Architecture**: `docker-compose.yml` at project root orchestrates frontend and backend services.
