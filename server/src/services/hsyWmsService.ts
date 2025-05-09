@@ -1,6 +1,7 @@
 import axios from 'axios';
 import querystring from 'querystring';
 import { SimpleCache } from '../utils/cache'; // Import the generic cache
+import { GeoJSONFeatureCollection } from '../types/geojson.types';
 
 // Define the specific type for this cache's values
 type HsyWmsValue = '5min' | '10min' | '15min' | null;
@@ -55,7 +56,7 @@ async function checkWmsLayer(layerName: string, x: number, y: number): Promise<b
     console.debug(`Querying HSY WMS: ${url}`); // Use debug level logging
 
     try {
-        const response = await axios.get(url);
+        const response = await axios.get<GeoJSONFeatureCollection>(url);
         // Check if the response is GeoJSON and has features
         const hasFeatures = response.data &&
             response.data.type === 'FeatureCollection' &&

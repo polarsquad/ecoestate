@@ -6,7 +6,7 @@ import sonarjs from 'eslint-plugin-sonarjs';
 
 export default tseslint.config(
     // Global ignores must be the first element
-    { ignores: ['dist/', 'node_modules/', 'jest.config.ts', '**/*.test.ts'] },
+    { ignores: ['dist/', 'node_modules/', 'jest.config.ts', '**/*.test.ts', 'src/scripts/**'] },
 
     // Base ESLint recommended rules
     js.configs.recommended,

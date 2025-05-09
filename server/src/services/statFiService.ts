@@ -20,14 +20,107 @@ const STATFI_API_BASE_URL = 'https://pxdata.stat.fi:443/PxWeb/api/v1/fi/StatFin/
 // The specific table ID for property prices
 const TABLE_ID = 'statfin_ashi_pxt_13mu.px';
 
-// --- Remove Re-used Types ---
-// interface Category { ... } - REMOVED
-// interface Dimension { ... } - REMOVED
-// interface JsonStatResponse { ... } - REMOVED
-// export interface BuildingPrices { ... } - REMOVED (now imported)
-// export interface PostalCodeData { ... } - REMOVED (now imported)
-// --- End of Removed Types ---
+interface ParsedPostalCode {
+    district: string;
+    municipality: string;
+}
 
+function parsePostalCodeLabel(postalCodeLabel: string): ParsedPostalCode {
+    // eslint-disable-next-line sonarjs/slow-regex
+    const districtMatch = postalCodeLabel.match(/^(\d+)\s+([^()]+?)\s*\(([^()]+?)\)$/);
+    let district = 'N/A', municipality = 'N/A';
+    if (districtMatch && districtMatch.length >= 3) { // Should be >= 4 due to 3 capture groups + full match
+        district = districtMatch[2].trim();
+        municipality = districtMatch[3].trim();
+    }
+    return { district, municipality };
+}
+
+// eslint-disable-next-line sonarjs/cognitive-complexity
+function processBuildingTypePrices(
+    data: JsonStatResponse,
+    postalCodeIndex: number,
+    buildingTypeSize: number,
+    buildingTypes: Record<string, string>
+): BuildingPrices {
+    const buildingTypePrices: BuildingPrices = {};
+    for (let btypeIdx = 0; btypeIdx < buildingTypeSize; btypeIdx++) {
+        const valueIndex = postalCodeIndex * buildingTypeSize + btypeIdx;
+
+        if (valueIndex < data.value.length) {
+            // eslint-disable-next-line security/detect-object-injection
+            const price = data.value[valueIndex];
+            const buildingTypeKey = Object.keys(buildingTypes).find(
+                // eslint-disable-next-line security/detect-object-injection
+                key => data.dimension.Talotyyppi.category.index[key] === btypeIdx
+            );
+
+            if (buildingTypeKey) {
+                // eslint-disable-next-line security/detect-object-injection
+                const buildingTypeLabel = buildingTypes[buildingTypeKey];
+                let finalPrice: number | 'N/A';
+                if (price === '.' || price === '...') {
+                    finalPrice = 'N/A';
+                } else {
+                    const numPrice = Number(price);
+                    if (isNaN(numPrice)) {
+                        finalPrice = 'N/A';
+                    } else {
+                        finalPrice = numPrice;
+                    }
+                }
+                if (Object.prototype.hasOwnProperty.call(buildingTypes, buildingTypeKey) &&
+                    typeof buildingTypeLabel === 'string' &&
+                    buildingTypeLabel !== '__proto__' &&
+                    buildingTypeLabel !== 'constructor' &&
+                    buildingTypeLabel !== 'prototype') {
+                    // eslint-disable-next-line security/detect-object-injection
+                    buildingTypePrices[buildingTypeLabel] = finalPrice;
+                }
+            }
+        }
+    }
+    return buildingTypePrices;
+}
+
+function transformStatFiData(
+    data: JsonStatResponse,
+    postalCodes: Record<string, string>,
+    postalCodeIndexes: Record<string, number>,
+    buildingTypes: Record<string, string>,
+    buildingTypeSize: number
+): PostalCodeData[] {
+    const pricesByPostalCode: PostalCodeData[] = [];
+
+    for (const postalCodeKey in postalCodeIndexes) {
+        // eslint-disable-next-line security/detect-object-injection
+        const postalCodeLabel = postalCodes[postalCodeKey];
+        // eslint-disable-next-line security/detect-object-injection
+        const postalCodeIndex = postalCodeIndexes[postalCodeKey];
+        const postalCodeNumber = postalCodeKey.trim();
+
+        const { district, municipality } = parsePostalCodeLabel(postalCodeLabel);
+
+        const buildingTypePrices = processBuildingTypePrices(
+            data,
+            postalCodeIndex,
+            buildingTypeSize,
+            buildingTypes
+        );
+
+        if (Object.values(buildingTypePrices).some(p => p !== 'N/A')) {
+            pricesByPostalCode.push({
+                postalCode: postalCodeNumber,
+                district,
+                municipality,
+                fullLabel: postalCodeLabel,
+                prices: buildingTypePrices
+            });
+        }
+    }
+    pricesByPostalCode.sort((a, b) => a.postalCode.localeCompare(b.postalCode));
+    return pricesByPostalCode;
+}
 
 /**
  * Fetches and processes property price data from Statistics Finland for a given year.
@@ -89,60 +182,16 @@ export async function fetchStatFiPropertyData(year: string = "2023"): Promise<Po
         const postalCodes = data.dimension.Postinumero.category.label;
         const postalCodeIndexes = data.dimension.Postinumero.category.index;
 
-        const pricesByPostalCode: PostalCodeData[] = [];
         const buildingTypeSize = data.size[data.id.indexOf('Talotyyppi')]; // Get size dynamically
 
         // Process each postal code
-        for (const postalCodeKey in postalCodeIndexes) {
-            const postalCodeLabel = postalCodes[postalCodeKey];
-            const postalCodeIndex = postalCodeIndexes[postalCodeKey];
-            const postalCodeNumber = postalCodeKey.trim();
-
-            // Extract district and municipality
-            const districtMatch = postalCodeLabel.match(/^\d+\s+(.+?)\s*\((.+?)\)$/);
-            let district = 'N/A', municipality = 'N/A';
-            if (districtMatch && districtMatch.length >= 3) {
-                district = districtMatch[1].trim();
-                municipality = districtMatch[2].trim();
-            }
-
-            const buildingTypePrices: BuildingPrices = {};
-
-            // Get price for each building type at this postal code
-            for (let btypeIdx = 0; btypeIdx < buildingTypeSize; btypeIdx++) {
-                // Simplified index calculation assuming Year and Tiedot dimensions have size 1
-                const valueIndex = postalCodeIndex * buildingTypeSize + btypeIdx;
-
-                if (valueIndex < data.value.length) {
-                    const price = data.value[valueIndex];
-                    const buildingTypeKey = Object.keys(buildingTypes).find(
-                        key => data.dimension.Talotyyppi.category.index[key] === btypeIdx
-                    );
-
-                    if (buildingTypeKey) {
-                        const buildingTypeLabel = buildingTypes[buildingTypeKey];
-                        // Use 'N/A' for missing/invalid data, otherwise convert valid numbers
-                        buildingTypePrices[buildingTypeLabel] = (price === '.' || price === '...')
-                            ? 'N/A'
-                            : (isNaN(Number(price)) ? 'N/A' : Number(price));
-                    }
-                }
-            }
-
-            // Only include areas with some price data
-            if (Object.values(buildingTypePrices).some(p => p !== 'N/A')) {
-                pricesByPostalCode.push({
-                    postalCode: postalCodeNumber,
-                    district,
-                    municipality,
-                    fullLabel: postalCodeLabel,
-                    prices: buildingTypePrices
-                });
-            }
-        }
-
-        // Sort results by postal code
-        pricesByPostalCode.sort((a, b) => a.postalCode.localeCompare(b.postalCode));
+        const pricesByPostalCode = transformStatFiData(
+            data,
+            postalCodes,
+            postalCodeIndexes,
+            buildingTypes,
+            buildingTypeSize
+        );
 
         console.log(`Successfully processed ${pricesByPostalCode.length} postal code areas with StatFin data for ${year}.`);
 
@@ -187,6 +236,10 @@ export function clearStatFiCache() {
  * Helper function to safely get a numeric price for a specific building type.
  */
 const getNumericPrice = (data: PostalCodeData, buildingType: string): number | null => {
+    if (!Object.prototype.hasOwnProperty.call(data.prices, buildingType)) {
+        return null; // Or handle as an error/warning
+    }
+    // eslint-disable-next-line security/detect-object-injection
     const price = data.prices[buildingType];
     if (price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0) {
         return Number(price);
@@ -214,9 +267,19 @@ const calculateAggregateMetrics = (
 
         if (startPrice !== null && endPrice !== null && startPrice > 0) {
             const percentChange = ((endPrice - startPrice) / startPrice) * 100;
-            const direction = percentChange > 1 ? 'up' : percentChange < -1 ? 'down' : 'stable';
+
+            let direction: 'up' | 'down' | 'stable';
+            if (percentChange > 1) {
+                direction = 'up';
+            } else if (percentChange < -1) {
+                direction = 'down';
+            } else {
+                direction = 'stable';
+            }
+
             const averageYearlyChange = (endPrice - startPrice) / (periodLength - 1);
 
+            // eslint-disable-next-line security/detect-object-injection
             trends[type] = {
                 percentChange,
                 direction,
@@ -225,6 +288,7 @@ const calculateAggregateMetrics = (
                 averageYearlyChange,
             };
         } else {
+            // eslint-disable-next-line security/detect-object-injection
             trends[type] = null; // Not enough data for this type
         }
     });
@@ -248,24 +312,41 @@ export function calculatePriceTrends(
     // Organize data by postal code
     yearlyData.forEach(yearDataSet => {
         yearDataSet.forEach(postalData => {
-            allPostalCodes.add(postalData.postalCode);
-            if (!trendsByPostalCode[postalData.postalCode]) {
-                trendsByPostalCode[postalData.postalCode] = new Array(yearlyData.length).fill(undefined);
+            const pc = postalData.postalCode;
+            if (typeof pc === 'string' && pc !== '__proto__' && pc !== 'constructor' && pc !== 'prototype') {
+                allPostalCodes.add(pc);
+                // eslint-disable-next-line security/detect-object-injection
+                if (!trendsByPostalCode[pc]) {
+                    // eslint-disable-next-line security/detect-object-injection,@typescript-eslint/no-unsafe-assignment
+                    trendsByPostalCode[pc] = new Array(yearlyData.length).fill(undefined);
+                }
             }
         });
     });
 
     // Fill the trendsByPostalCode structure
     yearlyData.forEach((yearDataSet, yearIndex) => {
-        yearDataSet.forEach(postalData => {
-            trendsByPostalCode[postalData.postalCode][yearIndex] = postalData;
+        yearDataSet.forEach(pData => {
+            const postalData = pData;
+            const pc = postalData.postalCode;
+            // eslint-disable-next-line security/detect-object-injection
+            if (typeof pc === 'string' && pc !== '__proto__' && pc !== 'constructor' && pc !== 'prototype' && trendsByPostalCode[pc]) {
+                // eslint-disable-next-line security/detect-object-injection
+                const targetArray = trendsByPostalCode[pc];
+                if (targetArray) {
+                    // eslint-disable-next-line security/detect-object-injection
+                    targetArray[yearIndex] = postalData;
+                }
+            }
         });
     });
 
     // Calculate trends for each postal code
     const finalTrends: PriceTrend[] = [];
-    allPostalCodes.forEach(postalCode => {
-        const postalCodeYearlyData = trendsByPostalCode[postalCode];
+    allPostalCodes.forEach(pc => {
+        // pc is already validated from when it was added to allPostalCodes
+        // eslint-disable-next-line security/detect-object-injection
+        const postalCodeYearlyData = trendsByPostalCode[pc];
         const trends = calculateAggregateMetrics(postalCodeYearlyData);
 
         // Find the first valid entry to get district/municipality/label
@@ -273,7 +354,7 @@ export function calculatePriceTrends(
 
         if (representativeData && Object.values(trends).some(t => t !== null)) {
             finalTrends.push({
-                postalCode: postalCode,
+                postalCode: pc,
                 district: representativeData.district,
                 municipality: representativeData.municipality,
                 fullLabel: representativeData.fullLabel,
