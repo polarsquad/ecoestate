@@ -11,6 +11,19 @@ import VisualizationSelector, { VisualizationType } from './VisualizationSelecto
 import LayerControl from './LayerControl';
 import { escapeHTML } from '../utils/stringUtils';
 
+// Helper function to transform a single coordinate pair
+const transformCoordinatePair = (pair: number[]): number[] => {
+    const [x, y] = pair;
+    return proj4('EPSG:3879', 'EPSG:4326', [x, y]);
+};
+
+// Helper function to transform all coordinates in a ring (in place)
+const transformRing = (ring: number[][]): void => {
+    for (let i = 0; i < ring.length; i++) {
+        ring[i] = transformCoordinatePair(ring[i]);
+    }
+};
+
 // Define the coordinate systems
 // EPSG:3879 - Helsinki local coordinate system (used by HSY)
 // EPSG:4326 - WGS84 (used by Leaflet)
@@ -103,27 +116,27 @@ const PostcodeBoundaries: React.FC = () => {
         const transformed = JSON.parse(JSON.stringify(geoJSON));
 
         transformed.features.forEach((feature: Feature) => {
-            if (feature.geometry.type === 'Polygon') {
-                feature.geometry.coordinates.forEach((ring: number[][]) => {
-                    for (let i = 0; i < ring.length; i++) {
-                        const [x, y] = ring[i];
-                        const [lon, lat] = proj4('EPSG:3879', 'EPSG:4326', [x, y]);
-                        ring[i] = [lon, lat];
-                    }
-                });
-            }
-            else if (feature.geometry.type === 'MultiPolygon') {
-                feature.geometry.coordinates.forEach((polygon: number[][][]) => {
-                    polygon.forEach((ring: number[][]) => {
-                        for (let i = 0; i < ring.length; i++) {
-                            const [x, y] = ring[i];
-                            const [lon, lat] = proj4('EPSG:3879', 'EPSG:4326', [x, y]);
-                            ring[i] = [lon, lat];
+            if (feature.geometry) {
+                switch (feature.geometry.type) {
+                    case 'Polygon':
+                        if (feature.geometry.coordinates) {
+                            // Transform each ring in the Polygon
+                            feature.geometry.coordinates.forEach(transformRing);
                         }
-                    });
-                });
+                        break;
+                    case 'MultiPolygon':
+                        if (feature.geometry.coordinates) {
+                            // Transform each ring in each Polygon of the MultiPolygon
+                            feature.geometry.coordinates.forEach((polygon: number[][][]) => {
+                                polygon.forEach(transformRing);
+                            });
+                        }
+                        break;
+                    // Add cases for other geometry types if needed
+                }
             }
         });
+
         return transformed;
     }, []);
 
@@ -176,6 +189,7 @@ const PostcodeBoundaries: React.FC = () => {
         }
     }, []);
 
+    /* eslint-disable security/detect-object-injection */
     const getPriceColor = useCallback((postalCode: string): string => {
         if (!propertyPrices.length) {
             return '#cccccc';
@@ -189,10 +203,8 @@ const PostcodeBoundaries: React.FC = () => {
         ];
         let price: number | null = null;
         for (const type of apartmentTypes) {
-            // Use Object.hasOwn for safer check
-            // Reverted to hasOwnProperty due to TS target version
-            // eslint-disable-next-line no-prototype-builtins
-            if (priceData.prices.hasOwnProperty(type) &&
+            // Use Object.hasOwn for safer check -> Reverted to safer hasOwnProperty call
+            if (Object.prototype.hasOwnProperty.call(priceData.prices, type) &&
                 priceData.prices[type] !== 'N/A' &&
                 !isNaN(Number(priceData.prices[type])) &&
                 Number(priceData.prices[type]) > 0) {
@@ -208,7 +220,9 @@ const PostcodeBoundaries: React.FC = () => {
         if (price < 6000) return '#fc8d59';
         return '#d73027';
     }, [propertyPrices]);
+    /* eslint-enable security/detect-object-injection */
 
+    /* eslint-disable security/detect-object-injection */
     const getTrendColor = useCallback((postalCode: string): string => {
         if (!priceTrends.length) {
             return '#cccccc';
@@ -225,7 +239,8 @@ const PostcodeBoundaries: React.FC = () => {
 
         const changes: number[] = [];
         for (const type of apartmentTypes) {
-            if (trendData.trends[type] && trendData.trends[type]?.percentChange !== undefined) {
+            // Add safer hasOwnProperty check before accessing trend data
+            if (Object.prototype.hasOwnProperty.call(trendData.trends, type) && trendData.trends[type] && trendData.trends[type]?.percentChange !== undefined) {
                 changes.push(trendData.trends[type]!.percentChange);
             }
         }
@@ -240,6 +255,7 @@ const PostcodeBoundaries: React.FC = () => {
         if (avgChange < 15) return '#91cf60';
         return '#1a9850';
     }, [priceTrends]);
+    /* eslint-enable security/detect-object-injection */
 
     const getFeatureColor = useCallback((postalCode: string): string => {
         switch (visualizationType) {
@@ -274,76 +290,90 @@ const PostcodeBoundaries: React.FC = () => {
         };
     };
 
+    // Helper function to generate tooltip content for heatmap mode
+    const getHeatmapTooltipContent = useCallback((postalCode: string, prices: PropertyPrice[]): string => {
+        let content = `<b>Postcode: ${escapeHTML(postalCode)}</b>`;
+        const priceData = prices.find(p => p.postalCode === postalCode);
+        if (priceData) {
+            content += `<br/><b>${escapeHTML(priceData.district)}, ${escapeHTML(priceData.municipality)}</b><br/><hr/>`;
+            const priceInfo = Object.entries(priceData.prices)
+                .filter(([, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
+                .map(([type, price]) => `${escapeHTML(type)}: ${escapeHTML(price)} €/m²`);
+            if (priceInfo.length > 0) {
+                content += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
+            } else {
+                content += 'No valid price data available for this year';
+            }
+        } else {
+            content += '<br/>No property price data found for this year';
+        }
+        return content;
+    }, []);
+
+    // Helper function to generate tooltip content for trend mode
+    const getTrendTooltipContent = useCallback((postalCode: string, trends: PriceTrend[], endYear: number): string => {
+        let content = `<b>Postcode: ${escapeHTML(postalCode)}</b>`;
+        const trendData = trends.find(p => p.postalCode === postalCode);
+        if (trendData) {
+            content += `<br/><b>${escapeHTML(trendData.district)}, ${escapeHTML(trendData.municipality)}</b><br/><hr/>`;
+            content += `<b>Price Trends (${escapeHTML(endYear - 4)}-${escapeHTML(endYear)}):</b><br/>`;
+            const trendInfo = Object.entries(trendData.trends)
+                .filter(([, data]) => data !== null)
+                .map(([type, data]) => {
+                    if (!data) return '';
+                    let directionArrow = '→'; // Default to stable
+                    if (data.direction === 'up') {
+                        directionArrow = '↑';
+                    } else if (data.direction === 'down') {
+                        directionArrow = '↓';
+                    }
+                    const startPriceStr = data.startPrice !== null ? escapeHTML(data.startPrice) : 'N/A';
+                    const endPriceStr = data.endPrice !== null ? escapeHTML(data.endPrice) : 'N/A';
+                    return `${escapeHTML(type)}: ${escapeHTML(data.percentChange.toFixed(1))}% ${directionArrow} (${startPriceStr} → ${endPriceStr} €/m²)`;
+                })
+                .filter(info => info !== '');
+            if (trendInfo.length > 0) {
+                content += trendInfo.join('<br/>');
+            } else {
+                content += 'No valid trend data available for this period';
+            }
+        } else {
+            content += '<br/>No price trend data found for this period';
+        }
+        return content;
+    }, []);
+
     const onEachBoundaryFeature = useCallback((feature: Feature, layer: L.Layer) => {
         if (!feature || !feature.properties) return;
         const postalCode = feature.properties.postalCode;
         if (!postalCode) return;
 
-        const getTooltipContent = () => {
-            let content = `<b>Postcode: ${escapeHTML(postalCode)}</b>`;
+        // Refactored tooltip content generation
+        const getCurrentTooltipContent = () => {
             if (!dataLoadedForMode) {
-                content += `<br/><i>Loading data...</i>`;
-                return content;
+                return `<b>Postcode: ${escapeHTML(postalCode)}</b><br/><i>Loading data...</i>`;
             }
 
             if (visualizationType === 'heatmap') {
-                const priceData = propertyPrices.find(p => p.postalCode === postalCode);
-                if (priceData) {
-                    content += `<br/><b>${escapeHTML(priceData.district)}, ${escapeHTML(priceData.municipality)}</b><br/><hr/>`;
-                    const priceInfo = Object.entries(priceData.prices)
-                        .filter(([, price]) => price !== 'N/A' && !isNaN(Number(price)) && Number(price) > 0)
-                        .map(([type, price]) => `${escapeHTML(type)}: ${escapeHTML(price)} €/m²`);
-                    if (priceInfo.length > 0) {
-                        content += '<b>Avg. Prices (€/m²):</b><br/>' + priceInfo.join('<br/>');
-                    } else {
-                        content += 'No valid price data available for this year';
-                    }
-                } else {
-                    content += '<br/>No property price data found for this year';
-                }
+                return getHeatmapTooltipContent(postalCode, propertyPrices);
             } else if (visualizationType === 'trend') {
-                const trendData = priceTrends.find(p => p.postalCode === postalCode);
-                if (trendData) {
-                    content += `<br/><b>${escapeHTML(trendData.district)}, ${escapeHTML(trendData.municipality)}</b><br/><hr/>`;
-                    content += `<b>Price Trends (${escapeHTML(selectedEndYear - 4)}-${escapeHTML(selectedEndYear)}):</b><br/>`;
-                    const trendInfo = Object.entries(trendData.trends)
-                        .filter(([, data]) => data !== null)
-                        .map(([type, data]) => {
-                            if (!data) return '';
-                            let directionArrow = '→'; // Default to stable
-                            if (data.direction === 'up') {
-                                directionArrow = '↑';
-                            } else if (data.direction === 'down') {
-                                directionArrow = '↓';
-                            }
-                            // Ensure all parts are escaped, especially type and potentially prices if they could be strings
-                            const startPriceStr = data.startPrice !== null ? escapeHTML(data.startPrice) : 'N/A';
-                            const endPriceStr = data.endPrice !== null ? escapeHTML(data.endPrice) : 'N/A';
-                            return `${escapeHTML(type)}: ${escapeHTML(data.percentChange.toFixed(1))}% ${directionArrow} (${startPriceStr} → ${endPriceStr} €/m²)`;
-                        })
-                        .filter(info => info !== '');
-                    if (trendInfo.length > 0) {
-                        content += trendInfo.join('<br/>');
-                    } else {
-                        content += 'No valid trend data available for this period';
-                    }
-                } else {
-                    content += '<br/>No price trend data found for this period';
-                }
+                return getTrendTooltipContent(postalCode, priceTrends, selectedEndYear);
             }
-            return content;
+            // Fallback or default content if needed
+            return `<b>Postcode: ${escapeHTML(postalCode)}</b>`;
         };
 
-        layer.bindTooltip(getTooltipContent, {
+        layer.bindTooltip(getCurrentTooltipContent, {
             sticky: true,
             className: 'custom-tooltip'
         });
 
+        // Keep event handlers as they were, but use the new getCurrentTooltipContent
         layer.off();
         layer.on({
             mouseover: (e) => {
                 const targetLayer = e.target;
-                targetLayer.setTooltipContent(getTooltipContent());
+                targetLayer.setTooltipContent(getCurrentTooltipContent()); // Use updated content getter
                 targetLayer.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.8 });
                 targetLayer.openTooltip();
             },
@@ -354,7 +384,16 @@ const PostcodeBoundaries: React.FC = () => {
                 targetLayer.closeTooltip();
             }
         });
-    }, [propertyPrices, priceTrends, visualizationType, styleBoundaries, selectedEndYear, dataLoadedForMode]);
+    }, [
+        propertyPrices,
+        priceTrends,
+        visualizationType,
+        styleBoundaries,
+        selectedEndYear,
+        dataLoadedForMode,
+        getHeatmapTooltipContent, // Add new dependencies
+        getTrendTooltipContent   // Add new dependencies
+    ]);
 
     const onEachGreenSpaceFeature = (feature: Feature<Geometry, GreenSpaceProperties>, layer: L.Layer) => {
         if (feature.properties?.name) {
