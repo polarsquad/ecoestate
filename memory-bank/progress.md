@@ -9,6 +9,8 @@
 - Postcode area boundary data integration
 - Scheduled tasks for data updates and caching
 - **Security**: Dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set via Terraform).
+- **Code Quality**: Addressed linting errors and warnings (cognitive complexity, security) in the client-side `PostcodeBoundaries.tsx` component.
+- **Code Quality**: Resolved all ESLint errors and major warnings in the `server/` directory. Cognitive complexity warnings were addressed through refactoring, while security/type errors were fixed or suppressed where appropriate.
 
 ### Frontend
 - React application structure with TypeScript

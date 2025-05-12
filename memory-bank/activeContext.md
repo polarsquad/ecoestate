@@ -84,6 +84,8 @@ Based on the implementation plan, the project is currently in the following stat
         - Development CSP added via `<meta http-equiv="Content-Security-Policy">` in `client/index.html`.
         - Production CSP added via HTTP header in `client/nginx.conf`.
     - **X-Content-Type-Options**: `nosniff` header added via Nginx configuration (`client/nginx.conf`).
+- ✅ **Client-Side Linting**: Resolved cognitive complexity and security/detect-object-injection warnings in `client/src/components/PostcodeBoundaries.tsx`.
+- ✅ **Server-Side Linting**: Resolved multiple ESLint errors and warnings (e.g., `no-unsafe-assignment`, `detect-object-injection`, `cognitive-complexity`) in `server/src/services/` files, primarily through code fixes and strategic use of suppression comments for accepted risks/false positives.
 
 ## Next Steps
 
