@@ -17,11 +17,10 @@ const transformCoordinatePair = (pair: number[]): number[] => {
     return proj4('EPSG:3879', 'EPSG:4326', [x, y]);
 };
 
-// Helper function to transform all coordinates in a ring (in place)
-const transformRing = (ring: number[][]): void => {
-    for (let i = 0; i < ring.length; i++) {
-        ring[i] = transformCoordinatePair(ring[i]);
-    }
+// Helper function to transform all coordinates in a ring (returns new array)
+const transformRing = (ring: number[][]): number[][] => {
+    // Use map to create a new array with transformed coordinates
+    return ring.map(transformCoordinatePair);
 };
 
 // Define the coordinate systems
@@ -120,16 +119,16 @@ const PostcodeBoundaries: React.FC = () => {
                 switch (feature.geometry.type) {
                     case 'Polygon':
                         if (feature.geometry.coordinates) {
-                            // Transform each ring in the Polygon
-                            feature.geometry.coordinates.forEach(transformRing);
+                            // Use map to assign the new transformed rings back
+                            feature.geometry.coordinates = feature.geometry.coordinates.map(transformRing);
                         }
                         break;
                     case 'MultiPolygon':
                         if (feature.geometry.coordinates) {
-                            // Transform each ring in each Polygon of the MultiPolygon
-                            feature.geometry.coordinates.forEach((polygon: number[][][]) => {
-                                polygon.forEach(transformRing);
-                            });
+                            // Use nested map to assign the new transformed polygons/rings back
+                            feature.geometry.coordinates = feature.geometry.coordinates.map((polygon: number[][][]) =>
+                                polygon.map(transformRing)
+                            );
                         }
                         break;
                     // Add cases for other geometry types if needed
