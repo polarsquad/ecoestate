@@ -19,30 +19,48 @@ const Legend: React.FC<LegendProps> = ({ title = 'Property Prices (€/m²)' }) 
         legend.onAdd = () => {
             const div = L.DomUtil.create('div', 'info legend');
 
-            // Different legend content based on the title (determines if it's price or trend)
+            // Create and add title
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'legend-title';
+            titleDiv.textContent = safeTitle;
+            div.appendChild(titleDiv);
+
+            // Define legend items based on type
+            let items: { color: string; label: string }[] = [];
             if (safeTitle.includes('Price Trend')) {
-                div.innerHTML = `
-                <div class="legend-title">${safeTitle}</div>
-                <div class="legend-item"><i style="background:#d73027"></i> ≤ -15%</div>
-                <div class="legend-item"><i style="background:#fc8d59"></i> -15% to -5%</div>
-                <div class="legend-item"><i style="background:#fee08b"></i> -5% to 0%</div>
-                <div class="legend-item"><i style="background:#d9ef8b"></i> 0% to 5%</div>
-                <div class="legend-item"><i style="background:#91cf60"></i> 5% to 15%</div>
-                <div class="legend-item"><i style="background:#1a9850"></i> ≥ 15%</div>
-                <div class="legend-item"><i style="background:#cccccc"></i> No data</div>
-                `;
+                items = [
+                    { color: '#d73027', label: ' ≤ -15%' },
+                    { color: '#fc8d59', label: ' -15% to -5%' },
+                    { color: '#fee08b', label: ' -5% to 0%' },
+                    { color: '#d9ef8b', label: ' 0% to 5%' },
+                    { color: '#91cf60', label: ' 5% to 15%' },
+                    { color: '#1a9850', label: ' ≥ 15%' },
+                    { color: '#cccccc', label: ' No data' },
+                ];
             } else {
-                div.innerHTML = `
-                <div class="legend-title">${safeTitle}</div>
-                <div class="legend-item"><i style="background:#1a9850"></i> < 2000</div>
-                <div class="legend-item"><i style="background:#91cf60"></i> 2000 - 3000</div>
-                <div class="legend-item"><i style="background:#d9ef8b"></i> 3000 - 4000</div>
-                <div class="legend-item"><i style="background:#fee08b"></i> 4000 - 5000</div>
-                <div class="legend-item"><i style="background:#fc8d59"></i> 5000 - 6000</div>
-                <div class="legend-item"><i style="background:#d73027"></i> > 6000</div>
-                <div class="legend-item"><i style="background:#cccccc"></i> No data</div>
-                `;
+                items = [
+                    { color: '#1a9850', label: ' < 2000' },
+                    { color: '#91cf60', label: ' 2000 - 3000' },
+                    { color: '#d9ef8b', label: ' 3000 - 4000' },
+                    { color: '#fee08b', label: ' 4000 - 5000' },
+                    { color: '#fc8d59', label: ' 5000 - 6000' },
+                    { color: '#d73027', label: ' > 6000' },
+                    { color: '#cccccc', label: ' No data' },
+                ];
             }
+
+            // Create and add legend items
+            items.forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'legend-item';
+
+                const colorBox = document.createElement('i');
+                colorBox.style.background = item.color;
+                itemDiv.appendChild(colorBox);
+
+                itemDiv.appendChild(document.createTextNode(item.label));
+                div.appendChild(itemDiv);
+            });
 
             return div;
         };
