@@ -310,7 +310,12 @@ const PostcodeBoundaries: React.FC = () => {
                         .filter(([, data]) => data !== null)
                         .map(([type, data]) => {
                             if (!data) return '';
-                            const directionArrow = data.direction === 'up' ? '↑' : data.direction === 'down' ? '↓' : '→';
+                            let directionArrow = '→'; // Default to stable
+                            if (data.direction === 'up') {
+                                directionArrow = '↑';
+                            } else if (data.direction === 'down') {
+                                directionArrow = '↓';
+                            }
                             // Ensure all parts are escaped, especially type and potentially prices if they could be strings
                             const startPriceStr = data.startPrice !== null ? escapeHTML(data.startPrice) : 'N/A';
                             const endPriceStr = data.endPrice !== null ? escapeHTML(data.endPrice) : 'N/A';
@@ -390,9 +395,13 @@ const PostcodeBoundaries: React.FC = () => {
                 }
 
                 const transformedBoundaries = transformCoordinates(boundariesResponse.data);
-                transformedBoundaries.features.forEach((feature: any) => {
+                transformedBoundaries.features.forEach((feature: Feature<Geometry, GeoJsonProperties>) => {
                     const props = feature.properties;
                     if (props && props.posno) {
+                        // Ensure properties object exists before modification
+                        if (!feature.properties) {
+                            feature.properties = {};
+                        }
                         feature.properties.postalCode = props.posno;
                     } else {
                         // Log if a feature is missing the postcode property
