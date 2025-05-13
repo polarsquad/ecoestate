@@ -15,6 +15,9 @@ locals {
   txt_record_name   = local.record_prefix != null ? (local.record_prefix == "" ? "asuid" : "asuid.${local.record_prefix}") : null
 
   frontend_app_name = "${var.project_name}-${var.environment}-frontend"
+
+  # Default app version to "latest" if null or empty
+  effective_app_version = var.app_version != null ? var.app_version : "latest"
 }
 
 resource "azurerm_log_analytics_workspace" "logs" {
@@ -79,7 +82,7 @@ resource "azurerm_container_app" "frontend" {
   template {
     container {
       name   = "frontend"
-      image  = "${var.acr_login_server}/${var.project_name}/frontend:${var.app_version}"
+      image  = "${var.acr_login_server}/${var.project_name}/frontend:${local.effective_app_version}"
       cpu    = 0.5
       memory = "1Gi"
 
@@ -90,6 +93,12 @@ resource "azurerm_container_app" "frontend" {
     }
     min_replicas = 1
     max_replicas = 5
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].container[0].image,
+    ]
   }
 }
 
@@ -125,7 +134,7 @@ resource "azurerm_container_app" "backend" {
   template {
     container {
       name   = "backend"
-      image  = "${var.acr_login_server}/${var.project_name}/backend:${var.app_version}"
+      image  = "${var.acr_login_server}/${var.project_name}/backend:${local.effective_app_version}"
       cpu    = 0.5
       memory = "1Gi"
 
@@ -147,6 +156,12 @@ resource "azurerm_container_app" "backend" {
     }
     min_replicas = 1
     max_replicas = 3
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].container[0].image,
+    ]
   }
 }
 

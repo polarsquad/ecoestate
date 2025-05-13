@@ -139,21 +139,27 @@ Create a `terraform.tfvars` file to override default values and specify the appl
 project_name = "ecoestate"
 location     = "swedencentral"
 acr_sku      = "Basic"
-app_version  = "1.0.0" # Specify the image tag to deploy
+app_version  = "1.0.0" # Only required for initial deployment
 ```
 
 Alternatively, pass variables via the command line:
 
 ```bash
+# Only needed for initial deployment
 terraform plan -var="app_version=1.0.0" -out=tfplan
+
+# For infrastructure changes only (after initial deployment)
+terraform plan -out=tfplan  # app_version is now optional
 ```
 
 7. **Plan the Deployment**
 
 ```bash
-terraform plan -var="app_version=<your-version>" -out=tfplan
-# Example:
-# terraform plan -var="app_version=1.0.0" -out=tfplan
+# Initial deployment
+terraform plan -var="app_version=1.0.0" -out=tfplan
+
+# Infrastructure changes only (after initial deployment)
+terraform plan -out=tfplan
 ```
 
 8. **Apply the Deployment**
@@ -162,12 +168,35 @@ terraform plan -var="app_version=<your-version>" -out=tfplan
 terraform apply tfplan
 ```
 
+## Deploying Application Updates
+
+The deployment process has been separated into infrastructure management (Terraform) and application updates (container images).
+
+### For Application Updates (Without Changing Infrastructure)
+
+Use the deployment scripts to update the container images:
+
+```bash
+# Deploy a new version to dev
+./scripts/deploy_app.sh -g rg-ecoestate-dev -p ecoestate -e dev -v 1.1.0 -r ecoestateacr.azurecr.io
+```
+
+### For Infrastructure Changes
+
+Infrastructure changes can be made with Terraform:
+
+```bash
+terraform workspace select dev
+terraform plan -out=tfplan  # No app_version required
+terraform apply tfplan
+```
+
 ## Environment-Specific Deployments
 
 Deploy specific image versions to different environments:
 
 ```bash
-# Deploy version 1.0.0 to dev
+# Initial deployment to dev with version 1.0.0
 terraform workspace select dev
 terraform plan -var="app_version=1.0.0" -out=tfplan
 terraform apply tfplan
@@ -177,10 +206,8 @@ terraform workspace select staging
 terraform plan -var="app_version=1.0.0" -out=tfplan
 terraform apply tfplan
 
-# Deploy version 1.1.0 to dev
-terraform workspace select dev
-terraform plan -var="app_version=1.1.0" -out=tfplan
-terraform apply tfplan
+# Update app to version 1.1.0 in dev environment without changing infrastructure
+./scripts/deploy_app.sh -g rg-ecoestate-dev -p ecoestate -e dev -v 1.1.0 -r ecoestateacr.azurecr.io
 ```
 
 Resources created in each workspace will include the workspace name in their names to ensure clear identification across environments.

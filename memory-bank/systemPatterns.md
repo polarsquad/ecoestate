@@ -76,8 +76,9 @@ EcoEstate follows a classic three-tier architecture:
    - **Modularity**: Modules for `acr`, `networking`, `container_apps`.
    - **Environment Management**: Terraform workspaces (dev, staging, prod).
    - **State Management**: Remote Azure Blob Storage backend with Azure AD auth.
-   - **Dynamic Configuration**: `app_version` variable in Terraform for image versions.
+   - **Dynamic Configuration**: `app_version` variable in Terraform for image versions (optional for infrastructure-only changes).
    - **Provider Authentication**: AzureRM provider configured to use explicit `subscription_id` and `tenant_id` passed as root module variables (e.g., via `terraform.tfvars`). This became necessary after provider upgrades (v3.x/v4.x).
+   - **Resource Change Isolation**: Uses `lifecycle { ignore_changes = [...] }` for properties managed outside of Terraform (e.g., container image tags updated by deployment scripts).
 
 7. **Reverse Proxy Pattern (ACA)**
    - **Location**: Nginx running inside the frontend container app.
@@ -131,6 +132,19 @@ EcoEstate follows a classic three-tier architecture:
     - **Mechanism**: `X-Content-Type-Options: nosniff` HTTP header set by Nginx in `client/nginx.conf`.
     - **Goal**: Prevent browsers from interpreting files as a different MIME type than what is specified by the `Content-Type` header, mitigating attacks related to content-type confusion.
 
+13. **Application Deployment Pattern (Implemented)**
+    - **Separation of Concerns**: Clear distinction between infrastructure management (Terraform) and application deployment (Azure CLI scripts).
+    - **Infrastructure Changes**: Managed via Terraform with image tag changes ignored.
+    - **Application Updates**: Managed via Azure CLI scripts without touching infrastructure.
+    - **Tooling**:
+        - `scripts/update_container_app_image.sh`: Uses `az containerapp update --image` to update a single container app's image.
+        - `scripts/deploy_app.sh`: Wrapper script to update both frontend and backend apps to the same version.
+    - **Benefits**:
+        - Simplified CI/CD pipelines (can update app without Terraform apply)
+        - Reduced risk of unintended infrastructure changes during application deployments
+        - Faster application deployments (no need to evaluate infrastructure changes)
+    - **Usage**: After initial deployment with Terraform, application updates use `./scripts/deploy_app.sh -g <resource-group> -p <project-name> -e <environment> -v <version> -r <registry-url>`.
+
 ## Critical Implementation Paths
 
 1. **Data Integration Flow**
@@ -146,7 +160,8 @@ EcoEstate follows a classic three-tier architecture:
    - Code Changes → Hot Reload in Container → Live Updates in Browser → Immediate Feedback Loop
 
 5. **Deployment Flow (Manual/Planned CI/CD)**
-   - Code Change → Build Images (`docker build --platform linux/amd64`) → Tag Image (SemVer) → Push to Dev ACR (`scripts/acr_upload.sh -v <ver> -w dev`) → Deploy to Dev Env (`terraform apply -var app_version=<ver>`) → Test → Push to Staging ACR (`scripts/acr_upload.sh -v <ver> -w staging`) → Deploy to Staging Env → Test → Push to Prod ACR → Deploy to Prod Env
+   - **Initial Infrastructure**: Code Change → Terraform Apply (may include initial app_version) → Azure Infrastructure Provisioned
+   - **Application Updates**: Code Change → Build, Tag & Push image to ACR (`scripts/acr_upload.sh -v <ver> -w <env>`) → Update Container Apps (`scripts/deploy_app.sh -g <rg> -p <proj> -e <env> -v <ver> -r <registry>`) → Test
 
 ## Component Relationships
 

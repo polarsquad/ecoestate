@@ -107,15 +107,14 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [x] Implement `azurerm_dns_cname_record` in the module to point the custom hostname to the app (for subdomains).
   - [x] Terraform now fully automates this process if `frontend_custom_hostname` and Azure DNS details are provided.
 
-#### Secrets and Environment Management
-- [ ] Configure environment variables securely
-  - [ ] Setup Azure Key Vault for secrets management
-  - [ ] Configure environment variable injection into containers
-  - [ ] Ensure proper separation of dev/staging/prod environments
+#### Separate application release from Terraform infrastructure code
+- [x] Release app without running `terraform apply`
+  - [x] Modify `container_apps` module to ignore image tag changes to frontend & backend
+  - [x] Create alternate way to change the image tag in Azure Container apps without TF
 
 #### CI/CD Pipeline
 - [ ] Setup automated build and deployment
-  - [ ] Create GitHub Actions or Azure DevOps pipeline
+  - [ ] Create GitHub Actions pipeline
   - [ ] Configure build, test, and deployment stages
   - [ ] Set up automated testing before deployment
 
@@ -130,11 +129,17 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [ ] Conduct performance tests (loading speed, API latency)
   - [ ] Test on multiple browsers and devices
 
+#### Secrets and Environment Management
+- [ ] Configure environment variables securely
+  - [ ] Setup Azure Key Vault for secrets management
+  - [ ] Configure environment variable injection into containers
+  - [ ] Ensure proper separation of dev/staging/prod environments
+
 ### Deliverables
 - [x] Containerized applications (frontend and backend)
 - [x] Docker Compose configuration for local development
 - [x] Infrastructure as Code templates for reproducible environments
-- [ ] Publicly accessible, functional MVP web application
+- [x] Publicly accessible, functional MVP web application
 - [ ] CI/CD pipeline for automated deployments
 
 ---

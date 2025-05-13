@@ -86,6 +86,12 @@ Based on the implementation plan, the project is currently in the following stat
     - **X-Content-Type-Options**: `nosniff` header added via Nginx configuration (`client/nginx.conf`).
 - ✅ **Client-Side Linting**: Resolved cognitive complexity and security/detect-object-injection warnings in `client/src/components/PostcodeBoundaries.tsx`.
 - ✅ **Server-Side Linting**: Resolved multiple ESLint errors and warnings (e.g., `no-unsafe-assignment`, `detect-object-injection`, `cognitive-complexity`) in `server/src/services/` files, primarily through code fixes and strategic use of suppression comments for accepted risks/false positives.
+- ✅ **Decoupled Infrastructure from Application Deployment**:
+    - Modified Terraform `container_apps` module to ignore image tag changes using `lifecycle { ignore_changes = [template[0].container[0].image] }`.
+    - Made `app_version` variable optional with a default value, allowing infrastructure changes without requiring an image tag.
+    - Created local value `effective_app_version` to handle null/empty app_version values.
+    - Updated documentation to reflect this separation of concerns.
+    - Added scripts `scripts/deploy_app.sh` and `scripts/update_container_app_image.sh` for app deployments without Terraform
 
 ## Next Steps
 
@@ -123,6 +129,9 @@ With the core infrastructure defined, application connectivity verified in Azure
 - **Security - CORS Policy**: Backend employs a dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set by Terraform in Azure), allowing specific origins rather than wildcards.
 - **Security - Content Security Policy (CSP)**: Dual CSP setup: `<meta>` tag for more permissive development policy (Vite HMR), and stricter HTTP header from Nginx for production.
 - **Security - X-Content-Type-Options**: `nosniff` header added via Nginx to prevent MIME sniffing.
+- **Deployment Strategy**: Separated infrastructure management (Terraform) from application deployment (Azure CLI scripts) to enable independent lifecycles and simpler CI/CD:
+  - Infrastructure changes made with Terraform (ignores image tag changes)
+  - Application updates made with `scripts/deploy_app.sh` (without modifying infrastructure)
 
 ## Current Challenges
 
@@ -161,3 +170,6 @@ With the core infrastructure defined, application connectivity verified in Azure
 - **Terraform Cyclical Dependencies**: When configuring inter-dependent resources (like frontend FQDN for backend CORS, and backend FQDN for frontend API proxy), care must be taken to avoid direct circular references. Constructing FQDNs from known components (like app name and environment default domain) can break such cycles.
 - **Content Security Policy (CSP) Implementation**: Requires different approaches for development (Vite's needs) and production (server-sent headers). Understanding directive interactions (e.g., `default-src` as fallback) and library-specific needs (e.g., Leaflet potentially using inline styles) is important.
 - **HTML Sanitization**: Essential when embedding dynamic data into HTML strings used by third-party libraries or `innerHTML`, even if the data originates from trusted API sources, as a defense-in-depth measure.
+- **Terraform Lifecycle Management**: Using `lifecycle { ignore_changes = [...] }` is critical for resources that might be updated outside of Terraform (like container images) or by Azure's automated processes (like certificate IDs). This prevents Terraform from attempting to revert such changes.
+- **Azure CLI for Container App Updates**: The `az containerapp update --image` command provides a simpler and more direct way to update container images than manipulating JSON templates, resulting in cleaner deployment scripts.
+- **Separating Infrastructure from Application Code**: By making app_version optional and ignoring image changes in Terraform, we created a clean separation between infrastructure changes (managed by Terraform) and application updates (managed by deployment scripts). This simplifies CI/CD and prevents unnecessary infrastructure updates.
