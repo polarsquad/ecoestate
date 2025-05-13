@@ -45,8 +45,10 @@ variable "subnet_id" {
 }
 
 variable "app_version" {
-  description = "The version tag of the app images to deploy"
+  description = "The version tag of the app images to deploy. For initial deployment only, updates should use the deploy scripts."
   type        = string
+  nullable    = true
+  default     = "latest"
 }
 
 variable "dns_zone_name" {

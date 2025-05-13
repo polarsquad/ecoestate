@@ -41,6 +41,8 @@
   - Terraform Backend configured for Azure Blob Storage with Azure AD authentication
   - Terraform Workspaces enabled for environment separation (dev, staging, prod)
   - Dynamic image versioning via `app_version` variable
+  - Container App image tag changes ignored via lifecycle configuration
+  - Decoupled infrastructure changes from application deployment
 - **✅ Frontend Nginx proxy configured for backend communication in ACA.**
 - **✅ Verified application connectivity in Azure Container Apps.**
 - **Security**:
@@ -54,6 +56,10 @@
   - Tags images with Semantic Versioning (`-v` flag)
   - Pushes images to the correct ACR based on Terraform workspace (`-w` flag)
   - Authenticates to ACR using Azure CLI (`az acr login`)
+- **✅ Application Deployment Scripts:**
+  - `scripts/update_container_app_image.sh`: Updates a single Container App's image using Azure CLI
+  - `scripts/deploy_app.sh`: Updates both frontend and backend images to a specified version
+  - Enables application updates without requiring infrastructure changes
 
 ## 🔄 In Progress
 
@@ -142,3 +148,8 @@ The immediate next steps are planning and implementing the CI/CD pipeline (Phase
 - **Introduced Security Headers**:
     - Content Security Policy (CSP) with different configurations for development (meta tag) and production (Nginx header) to bolster application security.
     - `X-Content-Type-Options: nosniff` added via Nginx to prevent MIME sniffing.
+- **Separated Infrastructure from Application Deployment**:
+    - Modified Terraform to ignore image tag changes in Container Apps
+    - Made app_version variable optional with sensible defaults
+    - Created simplified Azure CLI scripts for container image updates
+    - Established clear separation of concerns between infrastructure management and application releases

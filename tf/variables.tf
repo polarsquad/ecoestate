@@ -34,10 +34,11 @@ variable "acr_sku" {
 }
 
 variable "app_version" {
-  description = "The semantic version tag of the application images to deploy (e.g., 1.0.0)."
+  description = "The semantic version tag of the application images to deploy (e.g., 1.0.0). Only needed for initial deployment; subsequent image updates should use the deploy_app.sh script."
   type        = string
-  # No default - this should be explicitly set per deployment
-  # Example: set in terraform.tfvars or via -var="app_version=1.0.0"
+  nullable    = true
+  default     = null
+  # No longer mandatory for infrastructure-only changes
 }
 
 variable "container_apps_environment_infrastructure_subnet_id" {
