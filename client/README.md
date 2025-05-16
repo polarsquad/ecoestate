@@ -1,54 +1,42 @@
-# React + TypeScript + Vite
+# EcoEstate Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This directory contains the frontend application for EcoEstate, a web application designed to visualize property prices and their correlation with environmental quality indicators in Finland.
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+The frontend is a single-page application built using React and TypeScript. It provides an interactive map interface allowing users to explore various data layers, including property prices, green spaces, and public transport accessibility.
 
-## Expanding the ESLint configuration
+## Technologies Used
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- **Framework**: React
+- **Language**: TypeScript
+- **Build Tool**: Vite
+- **Map Visualization**: Leaflet.js
+- **HTTP Client**: Axios (for communication with the backend API)
+- **Linting**: ESLint with recommended TypeScript and React rules.
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+## Project Structure
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+- `public/`: Static assets.
+- `src/`: Application source code.
+  - `components/`: Reusable React components.
+  - `utils/`: Utility functions.
+  - `App.tsx`: Main application component.
+  - `main.tsx`: Application entry point.
+- `index.html`: Main HTML file.
+- `vite.config.ts`: Vite configuration.
+- `tsconfig.json`, `tsconfig.node.json`, `tsconfig.app.json`: TypeScript configurations.
+- `Dockerfile`: For building the production Docker image.
+- `nginx.conf`: Nginx configuration for serving the application in production and proxying API requests.
+- `entrypoint.sh`: Script used in the Docker image to prepare and start Nginx.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Available Scripts
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
-```
+In the `package.json`, you can find scripts for:
+
+- `dev`: Starts the Vite development server. (can also run via Docker Compose)
+- `build`: Builds the application for production.
+- `lint`: Runs ESLint.
+- `preview`: Serves the production build locally for preview.
+
+This README provides a basic overview. For more detailed architectural decisions, deployment strategies, and system patterns, please refer to the documents in the `/memory-bank` directory at the project root.
