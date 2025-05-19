@@ -133,7 +133,7 @@ terraform workspace select dev
 
 6. **Customize Deployment Variables (Optional)**
 
-Create a `terraform.tfvars` file to override default values and specify the application version:
+Create a `terraform.tfvars` file to override default values and specify the application version. For example:
 
 ```hcl
 project_name = "ecoestate"
@@ -174,11 +174,16 @@ The deployment process has been separated into infrastructure management (Terraf
 
 ### For Application Updates (Without Changing Infrastructure)
 
-Use the deployment scripts to update the container images:
+Use the deployment scripts to update the container images. For example:
 
 ```bash
 # Deploy a new version to dev
-./scripts/deploy_app.sh -g rg-ecoestate-dev -p ecoestate -e dev -v 1.1.0 -r ecoestateacr.azurecr.io
+./scripts/deploy_app.sh \
+  -g <resource group name> \
+  -p ecoestate \
+  -e dev \
+  -v 1.1.0 \
+  -r <acr address>
 ```
 
 ### For Infrastructure Changes
@@ -207,7 +212,12 @@ terraform plan -var="app_version=1.0.0" -out=tfplan
 terraform apply tfplan
 
 # Update app to version 1.1.0 in dev environment without changing infrastructure
-./scripts/deploy_app.sh -g rg-ecoestate-dev -p ecoestate -e dev -v 1.1.0 -r ecoestateacr.azurecr.io
+./scripts/deploy_app.sh \
+  -g <resource group name> \
+  -p ecoestate \
+  -e dev \
+  -v 1.1.0 \
+  -r <acr address>
 ```
 
 Resources created in each workspace will include the workspace name in their names to ensure clear identification across environments.
