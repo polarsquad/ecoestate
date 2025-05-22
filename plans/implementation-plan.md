@@ -112,10 +112,10 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [x] Modify `container_apps` module to ignore image tag changes to frontend & backend
   - [x] Create alternate way to change the image tag in Azure Container apps without TF
 
-#### Static analysis of Terraform code using tfsec
-- [x] Set up TFsec for static analysis of Terraform code in the tf/ dir
-  - [x] Document the setup in tf/README.md
-  - [x] Fix findings from TFsec
+#### Static analysis of Terraform code using Trivy
+- [ ] Set up Trivy for static analysis of Terraform code in the tf/ dir (Replaces TFsec)
+  - [ ] Document the setup in tf/README.md
+  - [ ] Fix findings from Trivy
 
 #### CI/CD Pipeline
 - [ ] Setup automated build and deployment
@@ -128,8 +128,8 @@ Develop a web app providing interactive map-based visualizations and correlation
 1. **Initial Pipeline: Static Analysis Only**
    - [x] Create `.github/workflows/ci.yml` for CI pipeline
    - [x] Add job to run ESLint on all TypeScript code (frontend and backend)
-   - [x] Add job to run TFsec on all Terraform code in `tf/`
-   - [x] Ensure pipeline fails if either linter or TFsec finds errors
+   - [ ] Add job to run Trivy on all Terraform code in `tf/` (Replaces TFsec)
+   - [ ] Ensure pipeline fails if either linter or Trivy finds errors
 
 2. **Add Test Execution**
    - [ ] Extend pipeline to run backend tests (Jest/Supertest)

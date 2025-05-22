@@ -30,14 +30,18 @@ jobs:
       - name: Run ESLint - Server
         run: npm run lint --prefix server
 
-  tfsec:
-    name: TFsec
+  trivy:
+    name: Trivy IaC Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
-      - name: Run TFsec Scan
-        uses: aquasecurity/tfsec-action@v1.0.3
+      - name: Run Trivy vulnerability scanner in IaC mode
+        uses: aquasecurity/trivy-action@master
         with:
-          working_directory: tf
-          # Add any other tfsec flags if needed, e.g., --tfvars-file or --exclude
+          scan-type: 'config'
+          scan-ref: 'tf/'
+          format: 'table'
+          exit-code: '1'
+          ignore-unfixed: true
+          trivy-config: trivy-iac.yaml # Optional: if you have a trivy config file
