@@ -46,7 +46,10 @@ Based on the implementation plan, the project is currently in the following stat
     - Implemented dynamic CORS policy for backend, configurable for production via environment variables and automatically set via Terraform.
     - Added Content Security Policy (CSP) for both development (meta tag) and production (Nginx header).
     - Added `X-Content-Type-Options: nosniff` header via Nginx.
-  - 🔄 Planning CI/CD pipeline.
+  - 🔄 Planning and breaking down CI/CD pipeline implementation:
+    - Step 1: Set up a basic GitHub Actions workflow to run static analysis (ESLint for TypeScript, TFsec for Terraform).
+    - Step 2: Extend the workflow to run backend and frontend tests (Jest, React Testing Library).
+    - Step 3: (Future) Add build, Docker image push, deployment, and secrets management steps.
 
 - **Phase 5 (Refinement & Documentation)**: ⬜ NOT STARTED
   - Correlation logic implementation needed
@@ -97,11 +100,10 @@ Based on the implementation plan, the project is currently in the following stat
 
 With the core infrastructure defined, application connectivity verified in Azure, and initial security hardening in place, the next steps are:
 
-1.  **Develop CI/CD Pipeline**:
-    - Set up GitHub Actions or Azure DevOps pipeline.
-    - Configure build, test, image push (using `acr_upload.sh`), and deployment (using Terraform) stages.
-    - Implement automated testing before deployment.
-    - Securely manage secrets (e.g., using Azure Key Vault, referenced in Terraform/pipeline).
+1.  **Develop CI/CD Pipeline** (detailed breakdown):
+    - **Step 1:** Create a basic GitHub Actions workflow (`.github/workflows/ci.yml`) that runs ESLint on all TypeScript code and TFsec on all Terraform code. Pipeline should fail on any linter or TFsec errors.
+    - **Step 2:** Extend the workflow to run backend and frontend tests (Jest, React Testing Library). Pipeline should fail on any test failures.
+    - **Step 3:** (Planned) Add build, Docker image push, deployment automation, and secrets management.
 2.  **Thoroughly Test CSP**: Verify CSP in both development and production environments, checking for console errors and ensuring all site functionality remains intact.
 3.  **Start Phase 5 Work**:
     - Begin implementing correlation logic between property prices and environmental factors.
