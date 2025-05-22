@@ -149,8 +149,8 @@ EcoEstate follows a classic three-tier architecture:
     - **Tooling**: GitHub Actions
     - **Step 1: Static Analysis**
         - Run ESLint on all TypeScript code (frontend and backend).
-        - Run TFsec on all Terraform code in `tf/`.
-        - Pipeline fails if either linter or TFsec finds errors.
+        - Run Trivy on all Terraform code in `tf/`.
+        - Pipeline fails if either linter or Trivy finds errors.
     - **Step 2: Test Execution**
         - Run backend tests (Jest/Supertest).
         - Run frontend tests (Jest/React Testing Library).
