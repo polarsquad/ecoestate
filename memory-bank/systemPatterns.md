@@ -145,6 +145,29 @@ EcoEstate follows a classic three-tier architecture:
         - Faster application deployments (no need to evaluate infrastructure changes)
     - **Usage**: After initial deployment with Terraform, application updates use `./scripts/deploy_app.sh -g <resource-group> -p <project-name> -e <environment> -v <version> -r <registry-url>`.
 
+14. **CI/CD Pipeline Pattern (Planned, Stepwise Approach)**
+    - **Tooling**: GitHub Actions
+    - **Step 1: Static Analysis**
+        - Run ESLint on all TypeScript code (frontend and backend).
+        - Run TFsec on all Terraform code in `tf/`.
+        - Pipeline fails if either linter or TFsec finds errors.
+    - **Step 2: Test Execution**
+        - Run backend tests (Jest/Supertest).
+        - Run frontend tests (Jest/React Testing Library).
+        - Pipeline fails on any test failures.
+    - **Step 3: Build & Deploy (Planned)**
+        - Build Docker images for frontend and backend.
+        - Push images to Azure Container Registry using `scripts/acr_upload.sh`.
+        - Deploy updated images to Azure Container Apps using `scripts/deploy_app.sh`.
+    - **Step 4: Secrets Management (Planned)**
+        - Integrate Azure Key Vault for secure secrets handling in CI/CD.
+    - **Step 5: Additional Enhancements (Planned)**
+        - Add environment matrix for dev/staging/prod.
+    - **Benefits**:
+        - Ensures code quality and security before build/deploy.
+        - Automates testing and deployment for faster, more reliable releases.
+        - Supports separation of concerns between infrastructure and application code.
+
 ## Critical Implementation Paths
 
 1. **Data Integration Flow**

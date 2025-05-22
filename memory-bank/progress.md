@@ -76,6 +76,23 @@
 - Automated deployment stage (using Terraform)
 - Secure handling of secrets (e.g., integration with Azure Key Vault)
 
+### CI/CD Pipeline (Stepwise Plan)
+1. [ ] **Basic Pipeline: Static Analysis**
+    - [ ] Create `.github/workflows/ci.yml` for CI pipeline
+    - [ ] Add ESLint job for all TypeScript code (frontend and backend)
+    - [ ] Add TFsec job for all Terraform code in `tf/`
+    - [ ] Pipeline fails on linter or TFsec errors
+2. [ ] **Add Test Execution**
+    - [ ] Add backend test job (Jest/Supertest)
+    - [ ] Add frontend test job (Jest/React Testing Library)
+    - [ ] Pipeline fails on test failures
+3. [ ] **Next Steps (Planned)**
+    - [ ] Add build and Docker image push steps
+    - [ ] Add deployment automation (using scripts/acr_upload.sh, scripts/deploy_app.sh)
+    - [ ] Integrate secrets management (Azure Key Vault)
+    - [ ] Add environment matrix for dev/staging/prod
+    - [ ] Add notifications (Slack, Teams, etc.)
+
 ### Analysis Features
 - Correlation logic between property prices and environmental factors
 - Detailed location-specific insights and pop-ups

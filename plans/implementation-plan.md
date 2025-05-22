@@ -123,6 +123,25 @@ Develop a web app providing interactive map-based visualizations and correlation
   - [ ] Configure build, test, and deployment stages
   - [ ] Set up automated testing before deployment
 
+##### Detailed CI/CD Pipeline Plan (GitHub Actions)
+
+1. **Initial Pipeline: Static Analysis Only**
+   - [x] Create `.github/workflows/ci.yml` for CI pipeline
+   - [x] Add job to run ESLint on all TypeScript code (frontend and backend)
+   - [x] Add job to run TFsec on all Terraform code in `tf/`
+   - [x] Ensure pipeline fails if either linter or TFsec finds errors
+
+2. **Add Test Execution**
+   - [ ] Extend pipeline to run backend tests (Jest/Supertest)
+   - [ ] Extend pipeline to run frontend tests (Jest/React Testing Library)
+   - [ ] Ensure test jobs run after static analysis and fail the pipeline on test failure
+
+3. **Next Steps (not implemented in this task)**
+   - [ ] Add build and Docker image push steps
+   - [ ] Add deployment automation (using scripts/acr_upload.sh, scripts/deploy_app.sh)
+   - [ ] Integrate secrets management (Azure Key Vault)
+   - [ ] Add environment matrix for dev/staging/prod
+
 #### Deployment and Verification
 - [ ] Deploy backend and frontend to Azure Container Apps
   - [ ] Push container images to registry
