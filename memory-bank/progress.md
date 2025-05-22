@@ -80,8 +80,8 @@
 1. [ ] **Basic Pipeline: Static Analysis**
     - [ ] Create `.github/workflows/ci.yml` for CI pipeline
     - [ ] Add ESLint job for all TypeScript code (frontend and backend)
-    - [ ] Add TFsec job for all Terraform code in `tf/`
-    - [ ] Pipeline fails on linter or TFsec errors
+    - [ ] Add Trivy job for all Terraform code in `tf/`
+    - [ ] Pipeline fails on linter or Trivy errors
 2. [ ] **Add Test Execution**
     - [ ] Add backend test job (Jest/Supertest)
     - [ ] Add frontend test job (Jest/React Testing Library)
