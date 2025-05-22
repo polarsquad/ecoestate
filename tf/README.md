@@ -229,14 +229,6 @@ Resources created in each workspace will include the workspace name in their nam
 - **Networking Module** (`tf/modules/networking/`): Sets up Virtual Network and Subnet
 - **Container Apps Module** (`tf/modules/container_apps/`): Deploys the application containers
 
-## Security Considerations
-
-- The Container Apps are deployed with a User-Assigned Managed Identity
-- The identity has only the minimum required permissions (AcrPull)
-- All resources are deployed within a Virtual Network for network isolation
-- No secrets are hardcoded in the configuration files
-- Terraform state is secured using Azure AD/Entra ID authentication instead of storage access keys
-
 ## Troubleshooting
 
 If you encounter permissions errors during `terraform init`:
@@ -259,46 +251,3 @@ To clean up a specific workspace:
 terraform workspace select <workspace-name>
 terraform destroy
 ```
-
-## Static Analysis: TFsec
-
-### What is TFsec?
-
-[TFsec](https://aquasecurity.github.io/tfsec/) is a static analysis tool for Terraform code. It scans your Terraform configuration for security issues and best practice violations, helping ensure our infrastructure is robust and production-ready.
-
-### Why Use TFsec?
-
-- **Security:** Identifies insecure configurations before deployment.
-- **Best Practices:** Enforces industry standards and cloud provider recommendations.
-- **Automation:** Makes it easy to catch issues early in the development process.
-
-### How to Install
-
-You can install TFsec locally using Homebrew (macOS/Linux):
-
-```sh
-brew install tfsec
-```
-
-Or download a binary from the [releases page](https://github.com/aquasecurity/tfsec/releases).
-
-### How to Run
-
-From the root of the `tf/` directory, run:
-
-```sh
-tfsec .
-```
-
-This will scan all Terraform files in the directory and output any findings.
-
-### Interpreting Results
-
-- **Critical/High:** Must be fixed before deployment.
-- **Medium/Low:** Should be reviewed and fixed if possible.
-- **False Positives:** If a finding is not relevant, document the reason in the code using `#tfsec:ignore:<RULE_ID>` and explain why.
-
-### Additional Resources
-
-- [TFsec Documentation](https://aquasecurity.github.io/tfsec/)
-- [List of Rules](https://aquasecurity.github.io/tfsec/v1.28.1/checks/) 
