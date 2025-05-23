@@ -145,28 +145,51 @@ EcoEstate follows a classic three-tier architecture:
         - Faster application deployments (no need to evaluate infrastructure changes)
     - **Usage**: After initial deployment with Terraform, application updates use `./scripts/deploy_app.sh -g <resource-group> -p <project-name> -e <environment> -v <version> -r <registry-url>`.
 
-14. **CI/CD Pipeline Pattern (Planned, Stepwise Approach)**
+14. **CI/CD Pipeline Pattern (Implemented, Step 2 Completed)**
     - **Tooling**: GitHub Actions
-    - **Step 1: Static Analysis**
-        - Run ESLint on all TypeScript code (frontend and backend).
-        - Run Trivy on all Terraform code in `tf/`.
+    - **Step 1 (Completed)**: Static Analysis
+        - ESLint on all TypeScript code (frontend and backend).
+        - Trivy on all Terraform code in `tf/`.
         - Pipeline fails if either linter or Trivy finds errors.
-    - **Step 2: Test Execution**
-        - Run backend tests (Jest/Supertest).
-        - Run frontend tests (Jest/React Testing Library).
+    - **Step 2 (Completed)**: Test Execution
+        - Backend tests using Jest/Supertest.
+        - Frontend tests using Vitest/React Testing Library.
         - Pipeline fails on any test failures.
-    - **Step 3: Build & Deploy (Planned)**
+        - Tests run after successful linting.
+    - **Step 3 (Planned)**: Build & Deploy
         - Build Docker images for frontend and backend.
         - Push images to Azure Container Registry using `scripts/acr_upload.sh`.
         - Deploy updated images to Azure Container Apps using `scripts/deploy_app.sh`.
-    - **Step 4: Secrets Management (Planned)**
+    - **Step 4 (Planned)**: Secrets Management
         - Integrate Azure Key Vault for secure secrets handling in CI/CD.
-    - **Step 5: Additional Enhancements (Planned)**
+    - **Step 5 (Planned)**: Additional Enhancements
         - Add environment matrix for dev/staging/prod.
     - **Benefits**:
         - Ensures code quality and security before build/deploy.
         - Automates testing and deployment for faster, more reliable releases.
         - Supports separation of concerns between infrastructure and application code.
+
+15. **Frontend Testing Pattern (Implemented)**
+    - **Framework**: Vitest (compatible with Vite build system)
+    - **Environment**: happy-dom (lightweight, JSDOM alternative)
+    - **Component Testing**: React Testing Library
+    - **Assertions**: Jest-DOM (via `@testing-library/jest-dom`)  
+    - **Directory Structure**:
+        - Test files located alongside the code they test in `__tests__` directories
+        - Common setup in `client/src/test/setup.ts`
+    - **Configuration**: `client/vitest.config.ts` with React plugin
+    - **Test Running**: Via `npm test` script
+    - **CI Integration**: Automated via GitHub Actions workflow
+    - **Test Coverage**: Core utility functions and UI components
+    - **Mocking Strategy**: 
+        - Direct module mocks using `vi.mock()`
+        - Vi spy/mock functions with `vi.fn()`
+        - Strategic DOM mocking for third-party libraries like Leaflet
+    - **Benefits**:
+        - Fast execution with Vite-powered test runner
+        - Native TypeScript support
+        - Compatible with existing React Testing Library knowledge
+        - Ensures components render and behave correctly
 
 ## Critical Implementation Paths
 
