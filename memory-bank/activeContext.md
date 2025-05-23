@@ -95,15 +95,24 @@ Based on the implementation plan, the project is currently in the following stat
     - Created local value `effective_app_version` to handle null/empty app_version values.
     - Updated documentation to reflect this separation of concerns.
     - Added scripts `scripts/deploy_app.sh` and `scripts/update_container_app_image.sh` for app deployments without Terraform
+- ✅ **Implemented Frontend Testing Framework**:
+    - Set up Vitest as the testing framework for the React frontend
+    - Added React Testing Library for component testing
+    - Created test setup configuration in `client/vitest.config.ts` and `client/src/test/setup.ts`
+    - Implemented unit tests for components and utilities (LayerControl, Legend, stringUtils)
+    - Configured proper mocking for Leaflet and React-Leaflet dependencies
+- ✅ **Enhanced CI/CD Pipeline**:
+    - Extended GitHub Actions workflow to include frontend and backend test execution
+    - Configured jobs to run after linting and fail the pipeline on test failures
+    - Added coverage directory to .gitignore to keep test coverage reports out of version control
 
 ## Next Steps
 
-With the core infrastructure defined, application connectivity verified in Azure, and initial security hardening in place, the next steps are:
+With the core infrastructure defined, application connectivity verified in Azure, initial security hardening in place, and test automation implemented, the next steps are:
 
-1.  **Develop CI/CD Pipeline** (detailed breakdown):
-    - **Step 1:** Create a basic GitHub Actions workflow (`.github/workflows/ci.yml`) that runs ESLint on all TypeScript code and Trivy on all Terraform code. Pipeline should fail on any linter or Trivy errors.
-    - **Step 2:** Extend the workflow to run backend and frontend tests (Jest, React Testing Library). Pipeline should fail on any test failures.
-    - **Step 3:** (Planned) Add build, Docker image push, deployment automation, and secrets management.
+1.  **Complete CI/CD Pipeline Development**:
+    - Add build, Docker image push, deployment automation, and secrets management to the CI/CD pipeline
+    - Create deployment stage with appropriate environment selection
 2.  **Thoroughly Test CSP**: Verify CSP in both development and production environments, checking for console errors and ensuring all site functionality remains intact.
 3.  **Start Phase 5 Work**:
     - Begin implementing correlation logic between property prices and environmental factors.

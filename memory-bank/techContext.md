@@ -131,12 +131,17 @@
 
 ## Testing Approach
 
-- **Frontend**: React Testing Library, Jest
+- **Frontend**: React Testing Library, Vitest with happy-dom
 - **Backend**: Jest, Supertest
 - **Infrastructure**: (To be developed - potentially Terratest or integration tests)
 - **Security**: Manual testing of CORS policy, CSP violations (browser console), and XSS fixes. Automated checks for dependency vulnerabilities (e.g., `npm audit`) should be part of CI/CD.
 - **Methodology**: Test-driven development (TDD)
 - **Coverage**: Essential components and critical paths
+- **CI Integration**: Tests automated via GitHub Actions for both frontend and backend
+- **Setup**: 
+  - Frontend tests configured with Vitest using `client/vitest.config.ts`
+  - Test setup in `client/src/test/setup.ts` for frontend includes jest-dom matchers
+  - Component tests using proper mocking for third-party libraries (Leaflet, react-leaflet)
 
 ## Technical Dependencies
 

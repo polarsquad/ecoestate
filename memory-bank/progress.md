@@ -23,6 +23,11 @@
 - **Security**:
     - XSS vulnerabilities in Leaflet tooltips and dynamic HTML in `Legend` component addressed via HTML escaping.
     - Content Security Policy (CSP) implemented via `<meta>` tag for development contexts.
+- **Testing**:
+    - Core components (LayerControl, Legend) covered with Vitest/React Testing Library tests
+    - Utility functions (stringUtils) covered with unit tests
+    - Test infrastructure with Vitest, happy-dom, and React Testing Library set up
+    - Proper mocking for third-party dependencies like Leaflet and react-leaflet
 
 ### Development Environment
 - **✅ Complete Docker Compose setup for local development:**
@@ -63,29 +68,27 @@
 
 ## 🔄 In Progress
 
-- CI/CD Pipeline Planning & Implementation
 - Thorough testing of Content Security Policy in all environments.
+- Expansion of CI/CD pipeline to include build and deploy stages.
 
 ## ⬜ What's Left to Build
 
 ### CI/CD Pipeline
-- GitHub Actions or Azure DevOps pipeline definition
 - Automated build stage
-- Automated test stage (including CSP verification if possible)
 - Automated image push stage (using `acr_upload.sh`)
 - Automated deployment stage (using Terraform)
 - Secure handling of secrets (e.g., integration with Azure Key Vault)
 
 ### CI/CD Pipeline (Stepwise Plan)
-1. [ ] **Basic Pipeline: Static Analysis**
-    - [ ] Create `.github/workflows/ci.yml` for CI pipeline
-    - [ ] Add ESLint job for all TypeScript code (frontend and backend)
-    - [ ] Add Trivy job for all Terraform code in `tf/`
-    - [ ] Pipeline fails on linter or Trivy errors
-2. [ ] **Add Test Execution**
-    - [ ] Add backend test job (Jest/Supertest)
-    - [ ] Add frontend test job (Jest/React Testing Library)
-    - [ ] Pipeline fails on test failures
+1. [x] **Basic Pipeline: Static Analysis**
+    - [x] Create `.github/workflows/ci.yml` for CI pipeline
+    - [x] Add job to run ESLint on all TypeScript code (frontend and backend)
+    - [x] Add job to run Trivy on all Terraform code in `tf/`
+    - [x] Ensure pipeline fails if either linter or Trivy finds errors
+2. [x] **Add Test Execution**
+    - [x] Add backend test job (Jest/Supertest)
+    - [x] Add frontend test job (Vitest/React Testing Library)
+    - [x] Pipeline fails on test failures
 3. [ ] **Next Steps (Planned)**
     - [ ] Add build and Docker image push steps
     - [ ] Add deployment automation (using scripts/acr_upload.sh, scripts/deploy_app.sh)
@@ -128,7 +131,7 @@ The immediate next steps are planning and implementing the CI/CD pipeline (Phase
     - Dynamic and secure CORS policy implemented for backend & Terraform.
     - Content Security Policy (CSP) implemented for dev and prod.
     - `X-Content-Type-Options: nosniff` header implemented for prod.
-  - 🔄 Planning CI/CD pipeline with GitHub Actions or Azure DevOps.
+  - 🔄 Implementing CI/CD pipeline with GitHub Actions.
   - 🔄 Thorough testing of Content Security Policy.
 
 ### Upcoming Phases
