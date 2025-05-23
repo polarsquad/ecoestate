@@ -105,6 +105,18 @@ Based on the implementation plan, the project is currently in the following stat
     - Extended GitHub Actions workflow to include frontend and backend test execution
     - Configured jobs to run after linting and fail the pipeline on test failures
     - Added coverage directory to .gitignore to keep test coverage reports out of version control
+- ✅ **Critical Security Vulnerability Fix**:
+    - **Issue**: `osmtogeojson@3.0.0-beta.5` had a critical vulnerability due to dependency on vulnerable `@xmldom/xmldom@0.8.3` (CVE-2022-39353, CVSS 9.8/10)
+    - **Solution**: Replaced `osmtogeojson` with `osm2geojson-lite@1.1.1`:
+        - Zero dependencies (eliminates xmldom vulnerability completely)
+        - Better performance (2.5x-11x faster than osmtogeojson)
+        - Active maintenance (published recently)
+        - Compatible API for seamless replacement
+    - **Files Updated**:
+        - `server/src/services/overpassService.ts`: Changed import and function call
+        - `server/src/scripts/testOverpassApi.ts`: Updated import and usage
+        - `server/src/tests/services/overpassService.test.ts`: Updated mocking and test references
+    - **Verification**: All tests pass, npm audit shows 0 vulnerabilities, functionality verified
 
 ## Next Steps
 

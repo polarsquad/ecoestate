@@ -1,5 +1,5 @@
 import axios from 'axios';
-import osmtogeojson from 'osmtogeojson';
+import osm2geojson from 'osm2geojson-lite';
 import { FeatureCollection } from 'geojson';
 import { SimpleCache } from '../utils/cache';
 import {
@@ -114,8 +114,9 @@ export async function fetchGreenSpaces(): Promise<FeatureCollection> {
             return emptyGeoJson;
         }
 
-        // Convert the Overpass response data to GeoJSON
-        const geojsonData = osmtogeojson(response.data);
+        // Convert the Overpass response data to GeoJSON using osm2geojson-lite
+        // Set completeFeature: true to ensure we get a proper FeatureCollection with all elements
+        const geojsonData = osm2geojson(response.data, { completeFeature: true });
 
         console.log(`Successfully received and converted ${geojsonData.features.length} green space features from Overpass API for Helsinki region.`);
 

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import querystring from 'querystring';
 import { OverpassResponse, OverpassElement } from '../types/overpass.types'; // Import types - Added .js extension
-import osmtogeojson from 'osmtogeojson';
+import osm2geojson from 'osm2geojson-lite';
 
 // Public Overpass API endpoint
 const OVERPASS_API_URL = 'https://overpass-api.de/api/interpreter';
@@ -126,7 +126,7 @@ async function testOverpassFetch(): Promise<void> {
         );
 
         if (response.data && response.data.elements) {
-            const geojsonData = osmtogeojson(response.data);
+            const geojsonData = osm2geojson(response.data, { completeFeature: true });
             console.log(`Successfully fetched and converted ${geojsonData.features.length} features (cafes in central Helsinki).`);
         } else {
             console.log('Received empty or invalid data from Overpass API.');

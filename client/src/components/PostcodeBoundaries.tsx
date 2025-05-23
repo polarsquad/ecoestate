@@ -89,8 +89,8 @@ const PostcodeBoundaries: React.FC = () => {
     const [greenSpacesLoading, setGreenSpacesLoading] = useState<boolean>(false);
     const [showGreenSpaces, setShowGreenSpaces] = useState<boolean>(false); // Default to false since disabled
 
-    // Kept for future - show UI controls for map layers (currently disabled)
-    const [showLayerControls] = useState<boolean>(false);
+    // Determine if layer controls should be shown based on enabled features
+    const showLayerControls = GREEN_SPACES_ENABLED; // Add || OTHER_FEATURE_ENABLED here in the future
 
     const map = useMap(); // Get map instance
 

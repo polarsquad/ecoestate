@@ -11,6 +11,7 @@
 - **Security**: Dynamic CORS policy based on `NODE_ENV` and `FRONTEND_ORIGIN_PROD` (set via Terraform).
 - **Code Quality**: Addressed linting errors and warnings (cognitive complexity, security) in the client-side `PostcodeBoundaries.tsx` component.
 - **Code Quality**: Resolved all ESLint errors and major warnings in the `server/` directory. Cognitive complexity warnings were addressed through refactoring, while security/type errors were fixed or suppressed where appropriate.
+- **Critical Security Fix**: Replaced vulnerable `osmtogeojson` package with `osm2geojson-lite` to eliminate CVE-2022-39353 (critical xmldom vulnerability). Zero dependencies, better performance, and maintained compatibility.
 
 ### Frontend
 - React application structure with TypeScript
@@ -54,6 +55,7 @@
     - Terraform module for Container Apps automatically configures `FRONTEND_ORIGIN_PROD` env var for backend CORS policy.
     - Nginx configuration (`client/nginx.conf`) includes production Content Security Policy (CSP) HTTP header.
     - Nginx configuration (`client/nginx.conf`) includes `X-Content-Type-Options: nosniff` header.
+    - **Dependency Security**: Eliminated critical CVE-2022-39353 vulnerability by replacing `osmtogeojson` with secure `osm2geojson-lite` package.
 
 ### Deployment Tooling (`scripts/`)
 - **✅ ACR Upload Script (`scripts/acr_upload.sh`):**
