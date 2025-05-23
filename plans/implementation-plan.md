@@ -131,9 +131,9 @@ Develop a web app providing interactive map-based visualizations and correlation
    - [x] Ensure pipeline fails if either linter or Trivy finds errors
 
 2. **Add Test Execution**
-   - [ ] Extend pipeline to run backend tests (Jest/Supertest)
-   - [ ] Extend pipeline to run frontend tests (Jest/React Testing Library)
-   - [ ] Ensure test jobs run after static analysis and fail the pipeline on test failure
+   - [x] Extend pipeline to run backend tests (Jest/Supertest)
+   - [x] Extend pipeline to run frontend tests (Vitest/React Testing Library)
+   - [x] Ensure test jobs run after static analysis and fail the pipeline on test failure
 
 3. **Next Steps (not implemented in this task)**
    - [ ] Add build and Docker image push steps
