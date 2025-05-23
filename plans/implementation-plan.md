@@ -172,6 +172,11 @@ Develop a web app providing interactive map-based visualizations and correlation
 ### Tasks
 - [ ] Implement initial correlation logic (basic aggregation by postal code/municipality)
 - [ ] Develop detailed pop-ups providing correlation insights at selected locations
+- [ ] **Address Frontend Performance in `PostcodeBoundaries.tsx`** (see `plans/frontend-performance-improvements.md` for details):
+    - [ ] Optimize `transformCoordinates` (avoid expensive deep clones, transform once).
+    - [ ] Optimize data fetching logic in `useEffect` (review dependencies, debounce). 
+    - [ ] Optimize `getPriceColor`/`getTrendColor` (use pre-computed lookup Maps).
+    - [ ] Plan for Green Spaces layer performance if re-enabled.
 - [ ] Write user-friendly documentation and usage guidelines
 - [ ] Document code clearly (frontend/backend)
 - [ ] Collect initial user feedback and address critical issues
