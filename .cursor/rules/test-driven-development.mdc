@@ -1,6 +1,6 @@
 ---
 description: 
-globs: server/src/**/*.ts,client/src/**/*.ts,client/src/**/*.tsx,client/src/**/*.jsx
+globs: server/src/**/*.ts,client/src/**/*.ts,client/src/**/*.tsx
 alwaysApply: false
 ---
 # Test-Driven Development (TDD) Workflow Rule

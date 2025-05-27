@@ -105,6 +105,9 @@ Based on the implementation plan, the project is currently in the following stat
     - Extended GitHub Actions workflow to include frontend and backend test execution
     - Configured jobs to run after linting and fail the pipeline on test failures
     - Added coverage directory to .gitignore to keep test coverage reports out of version control
+    - Consolidated frontend and backend image build and push into a single job using a matrix strategy.
+    - Configured image build and push to only occur on pushes to the `main` branch, preventing tag overwrites from PRs.
+    - Images are pushed to GitHub Container Registry (ghcr.io) with semantic versioning and a `latest` tag.
 - ✅ **Critical Security Vulnerability Fix**:
     - **Issue**: `osmtogeojson@3.0.0-beta.5` had a critical vulnerability due to dependency on vulnerable `@xmldom/xmldom@0.8.3` (CVE-2022-39353, CVSS 9.8/10)
     - **Solution**: Replaced `osmtogeojson` with `osm2geojson-lite@1.1.1`:
@@ -120,11 +123,12 @@ Based on the implementation plan, the project is currently in the following stat
 
 ## Next Steps
 
-With the core infrastructure defined, application connectivity verified in Azure, initial security hardening in place, and test automation implemented, the next steps are:
+With the core infrastructure defined, application connectivity verified in Azure, initial security hardening in place, test automation implemented, and initial CI/CD build/push to ghcr.io configured, the next steps are:
 
 1.  **Complete CI/CD Pipeline Development**:
-    - Add build, Docker image push, deployment automation, and secrets management to the CI/CD pipeline
-    - Create deployment stage with appropriate environment selection
+    - Add deployment automation steps to the CI/CD pipeline (e.g., deploying to Azure Container Apps from ghcr.io).
+    - Integrate secrets management (Azure Key Vault).
+    - Add environment matrix for dev/staging/prod deployments.
 2.  **Thoroughly Test CSP**: Verify CSP in both development and production environments, checking for console errors and ensuring all site functionality remains intact.
 3.  **Start Phase 5 Work**:
     - Begin implementing correlation logic between property prices and environmental factors.

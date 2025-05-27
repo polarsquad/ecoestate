@@ -91,11 +91,15 @@
     - [x] Add backend test job (Jest/Supertest)
     - [x] Add frontend test job (Vitest/React Testing Library)
     - [x] Pipeline fails on test failures
-3. [ ] **Next Steps (Planned)**
-    - [ ] Add build and Docker image push steps
-    - [ ] Add deployment automation (using scripts/acr_upload.sh, scripts/deploy_app.sh)
+3. [x] **Add Build and Docker Image Push to GitHub Container Registry (ghcr.io)**
+    - [x] Consolidated frontend and backend image build/push into a single job using a matrix strategy.
+    - [x] Configured to run only on push to `main` branch.
+    - [x] Images tagged with semantic version from `package.json` and `latest`.
+    - [x] Pushes to `ghcr.io/[owner]/ecoestate/frontend` and `ghcr.io/[owner]/ecoestate/backend`.
+4. [ ] **Next Steps (Planned)**
+    - [ ] Add deployment automation (using scripts/deploy_app.sh, modified to pull from ghcr.io)
     - [ ] Integrate secrets management (Azure Key Vault)
-    - [ ] Add environment matrix for dev/staging/prod
+    - [ ] Add environment matrix for dev/staging/prod deployments
     - [ ] Add notifications (Slack, Teams, etc.)
 
 ### Analysis Features
@@ -134,6 +138,8 @@ The immediate next steps are planning and implementing the CI/CD pipeline (Phase
     - Content Security Policy (CSP) implemented for dev and prod.
     - `X-Content-Type-Options: nosniff` header implemented for prod.
   - 🔄 Implementing CI/CD pipeline with GitHub Actions.
+    - ✅ Static analysis and test execution steps completed.
+    - ✅ Image build and push to ghcr.io for `main` branch completed.
   - 🔄 Thorough testing of Content Security Policy.
 
 ### Upcoming Phases

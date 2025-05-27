@@ -96,6 +96,9 @@ Develop a web app providing interactive map-based visualizations and correlation
 
 #### ✅ Deployment Tooling
 - [x] Create script for building, tagging, and pushing Docker images to ACR (`scripts/acr_upload.sh`)
+- [ ] **Planned Migration**: Transition from ACR to GitHub Packages for container image storage
+  - [ ] Update deployment scripts to work with GitHub Container Registry (ghcr.io)
+  - [x] Integrate GitHub Packages authentication into CI/CD pipeline
 
 ### 🔄 Next Steps to Complete
 
@@ -135,11 +138,67 @@ Develop a web app providing interactive map-based visualizations and correlation
    - [x] Extend pipeline to run frontend tests (Vitest/React Testing Library)
    - [x] Ensure test jobs run after static analysis and fail the pipeline on test failure
 
-3. **Next Steps (not implemented in this task)**
-   - [ ] Add build and Docker image push steps
-   - [ ] Add deployment automation (using scripts/acr_upload.sh, scripts/deploy_app.sh)
+3. **Container Registry Migration to GitHub Packages**
+   - [ ] **Transition from Azure Container Registry to GitHub Packages**
+     - [x] Configure GitHub Actions to build and push Docker images to GitHub Container Registry (ghcr.io)
+     - [x] Create GitHub Actions jobs for:
+       - [x] Building frontend Docker image after tests pass
+       - [x] Building backend Docker image after tests pass
+       - [x] Pushing both images to GitHub Packages with proper tagging (semantic versioning)
+     - [ ] Update deployment scripts to pull images from GitHub Packages instead of ACR
+     - [ ] Test end-to-end workflow: GitHub Actions → GitHub Packages → Azure Container Apps
+     - [ ] Keep ACR instances available during transition for rollback capability
+     - [ ] Document migration process and update deployment documentation
+
+##### Detailed GitHub Packages Migration Plan
+
+**Phase 3a: GitHub Actions Integration**
+- [x] Add Docker build jobs to existing `.github/workflows/ci.yml`
+  - [x] Configure job dependencies (run after linting and tests pass)
+  - [x] Set up GitHub Container Registry authentication using `GITHUB_TOKEN`
+  - [x] Configure proper image naming convention: `ghcr.io/[owner]/[repo]/[service]:[tag]`
+  - [x] Implement semantic versioning for image tags
+
+**Phase 3b: Container Image Build & Push**
+- [x] Frontend image build and push job
+  - [x] Build multi-stage Docker image for production
+  - [x] Tag with semantic version
+  - [x] Push to `ghcr.io/[owner]/ecoestate/frontend`
+  - [x] Set image visibility to public
+- [x] Backend image build and push job
+  - [x] Build multi-stage Docker image for production
+  - [x] Tag with semantic version
+  - [x] Push to `ghcr.io/[owner]/ecoestate/backend`
+  - [x] Set image visibility to public
+
+**Phase 3c: Deployment Script Updates**
+- [ ] Create new deployment scripts for GitHub Packages
+  - [ ] `scripts/ghcr_deploy.sh`: Deploy from GitHub Packages to Azure Container Apps
+  - [ ] Update `scripts/deploy_app.sh` to support both ACR and GitHub Packages sources
+- [ ] Update Terraform configuration (optional)
+  - [ ] Modify container app image references to support GitHub Packages URLs
+  - [ ] Add variables for registry selection (ACR vs GitHub Packages)
+
+**Phase 3d: Testing & Validation**
+- [ ] Test complete CI/CD workflow
+  - [ ] Verify images build successfully in GitHub Actions
+  - [ ] Confirm images are pushed to GitHub Packages correctly
+  - [ ] Test deployment to Azure Container Apps using GitHub Packages images
+  - [ ] Validate application functionality with new image source
+
+**Phase 3e: Documentation & Cleanup Preparation**
+- [ ] Update documentation
+  - [ ] Modify README.md with new deployment instructions
+  - [ ] Update deployment scripts documentation
+- [ ] Prepare for ACR deprecation
+  - [ ] Create checklist for ACR resource removal
+  - [ ] Plan timeline for ACR cleanup (after stable GitHub Packages operation)
+
+1. **Next Steps (after GitHub Packages migration)**
+   - [ ] Add deployment automation (using updated scripts for GitHub Packages)
    - [ ] Integrate secrets management (Azure Key Vault)
    - [ ] Add environment matrix for dev/staging/prod
+   - [ ] Remove ACR dependencies once GitHub Packages workflow is stable
 
 #### Deployment and Verification
 - [ ] Deploy backend and frontend to Azure Container Apps
@@ -164,6 +223,7 @@ Develop a web app providing interactive map-based visualizations and correlation
 - [x] Infrastructure as Code templates for reproducible environments
 - [x] Publicly accessible, functional MVP web application
 - [ ] CI/CD pipeline for automated deployments
+- [ ] **Migration to GitHub Packages**: Complete transition from ACR to GitHub Container Registry while maintaining deployment capability
 
 ---
 
